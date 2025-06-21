@@ -35,3 +35,20 @@ export default class Signal {
         this._subs.remove(sub);
     }
 }
+
+/** This is a signal whose value is contractually not a function which allows us to skip some logic and simplify the syntax */
+export class NFSignal extends Signal {
+    constructor(valueOrGetter) {
+        super(NFSignal.actualGetter(valueOrGetter));
+    }
+
+    setValue(valueOrGetter) {
+        super.setValue(NFSignal.actualGetter(valueOrGetter));
+    }
+
+    static actualGetter(valueOrGetter) {
+        if (valueOrGetter instanceof Signal) return () => valueOrGetter.getValue();
+        if (valueOrGetter instanceof Function) return valueOrGetter;
+        return () => valueOrGetter;
+    }
+}
