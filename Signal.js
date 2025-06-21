@@ -9,35 +9,41 @@ export default class Signal {
 
     setValue(getter) {
         this._getter = getter;
-        this.calculate();
+        this.markDirty();
     }
 
-    calculate() {
-        Signal._newSources = new Set();
-        Signal._currentContext = this;
-        this._value = this._getter();
-        for (const source of this._sources)
-            if (!Signal._newSources.has(source)) source.unsubscribe(this);
-        for (const source of Signal._newSources)
-            if (!this._sources.has(source)) source.subscribe(this);
-        this._sources = Signal._newSources;
-        Signal._newSources = null;
-        Signal._currentContext = null;
-
-        this._allSources = new Set([
-            ...this._sources,
-            ...[...this._sources].flatMap(a => [...a._allSources])
-        ]);
+    markDirty() {
+        this._isDirty = true;
 
         for (const sub of this._subs)
-            if (sub instanceof Signal) sub.calculate();
-            else sub(this._value);
+            if (sub instanceof Signal) sub.markDirty();
+            else sub(this);
     }
 
     getValue() {
         if (this._allSources.has(Signal._currentContext))
             throw new Error(`Circular dependency: ${Signal._currentContext} in ${this}`);
         Signal._newSources?.add(this);
+
+        if (this._isDirty) {
+            Signal._newSources = new Set();
+            Signal._currentContext = this;
+            this._value = this._getter();
+            for (const source of this._sources)
+                if (!Signal._newSources.has(source)) source.unsubscribe(this);
+            for (const source of Signal._newSources)
+                if (!this._sources.has(source)) source.subscribe(this);
+            this._sources = Signal._newSources;
+            Signal._newSources = null;
+            Signal._currentContext = null;
+            this._isDirty = false;
+
+            this._allSources = new Set([
+                ...this._sources,
+                ...[...this._sources].flatMap(a => [...a._allSources])
+            ]);
+        }
+
         return this._value;
     }
 
@@ -51,7 +57,7 @@ export default class Signal {
     }
 
     toString() {
-        return `Signal(${this.name ?? "value"} = ${this._value})`;
+        return `Signal(${this.name ?? "value"} = ${this._isDirty ? "???" : this._value})`;
     }
 }
 
