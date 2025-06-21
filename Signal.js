@@ -16,26 +16,17 @@ export default class Signal {
 
     markDirty() {
         this._isDirty = true;
-
         for (const sub of this._subs)
             if (sub instanceof Signal) sub.markDirty();
             else sub(this);
     }
 
-    static pushGetValueContext(context) {
-        this._getValueContextStack.push(context);
-    }
-
-    static popGetValueContext() {
-        return this._getValueContextStack.pop();
-    }
-
     static withContext(context, callback) {
-        this.pushGetValueContext(context);
+        this._getValueContextStack.push(context);
         try {
             return callback();
         } finally {
-            this.popGetValueContext();
+            this._getValueContextStack.pop();
         }
     }
 
@@ -56,9 +47,7 @@ export default class Signal {
                 newSources: new Set(),
                 signal: this
             };
-            Signal.withContext(context, () => {
-                this._value = this._getter();
-            });
+            this._value = Signal.withContext(context, this._getter);
             for (const source of this._sources)
                 if (!context.newSources.has(source)) source.unsubscribe(this);
             for (const source of context.newSources)
