@@ -30,35 +30,11 @@ function drawFrame(time) {
     ctx.fillStyle = '#eee';
     ctx.fillRect(0, 0, 300, 300);
 
-    ctx.beginPath();
-    const lineABValue = lineAB.getValue();
-    ctx.moveTo(lineABValue.a.x, lineABValue.a.y);
-    ctx.lineTo(lineABValue.b.x, lineABValue.b.y);
-    ctx.stroke();
-
-    ctx.beginPath();
-    const staticLineValue = staticLine.getValue();
-    ctx.moveTo(staticLineValue.a.x, staticLineValue.a.y);
-    ctx.lineTo(staticLineValue.b.x, staticLineValue.b.y);
-    ctx.stroke();
-
-    ctx.fillStyle = '#f00';
-    ctx.beginPath();
-    const pointAValue = pointA.getValue();
-    ctx.arc(pointAValue.x, pointAValue.y, 5, 0, Math.PI * 2, true);
-    ctx.fill();
-
-    ctx.fillStyle = '#00f';
-    ctx.beginPath();
-    const pointBValue = pointB.getValue();
-    ctx.arc(pointBValue.x, pointBValue.y, 5, 0, Math.PI * 2, true);
-    ctx.fill();
-
-    ctx.fillStyle = '#0b0';
-    ctx.beginPath();
-    const intersectionValue = intersection.getValue();
-    if (intersectionValue) ctx.arc(intersectionValue.x, intersectionValue.y, 5, 0, Math.PI * 2, true);
-    ctx.fill();
+    drawLine(ctx, lineAB, { colour: "black" });
+    drawLine(ctx, staticLine, { colour: "#888" });
+    drawPoint(ctx, pointA, { colour: '#f00' });
+    drawPoint(ctx, pointB, { colour: '#00f' });
+    drawPoint(ctx, intersection, { colour: '#0b0' });
 
     requestAnimationFrame(drawFrame);
 }
@@ -78,4 +54,22 @@ function lineIntersection(line1, line2) {
         x: (d1 * xDiff2 - d2 * xDiff1) / div,
         y: (d1 * yDiff2 - d2 * yDiff1) / div
     };
+}
+
+function drawLine(ctx, line, options) {
+    ctx.strokeStyle = options.colour ?? "black";
+    ctx.beginPath();
+    const val = line.getValue();
+    ctx.moveTo(val.a.x, val.a.y);
+    ctx.lineTo(val.b.x, val.b.y);
+    ctx.stroke();
+}
+
+/** point should be a signal that resolves either to {x,y} or null */
+function drawPoint(ctx, point, options = {}) {
+    ctx.fillStyle = options.colour ?? "black";
+    ctx.beginPath();
+    const val = point.getValue();
+    if (val) ctx.arc(val.x, val.y, 5, 0, Math.PI * 2, true);
+    ctx.fill();
 }
