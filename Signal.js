@@ -1,4 +1,6 @@
 export default class Signal {
+    static _getValueContextStack = [];
+
     constructor(getter, name) {
         this.name = name;
         this._subs = new Set();
@@ -20,24 +22,49 @@ export default class Signal {
             else sub(this);
     }
 
+    static pushGetValueContext(context) {
+        this._getValueContextStack.push(context);
+    }
+
+    static popGetValueContext() {
+        return this._getValueContextStack.pop();
+    }
+
+    static withContext(context, callback) {
+        this.pushGetValueContext(context);
+        try {
+            return callback();
+        } finally {
+            this.popGetValueContext();
+        }
+    }
+
+    static currentGetValueContext() {
+        return this._getValueContextStack[this._getValueContextStack.length - 1] ?? null;
+    }
+
     getValue() {
-        if (this._allSources.has(Signal._currentContext))
-            throw new Error(`Circular dependency: ${Signal._currentContext} in ${this}`);
-        Signal._newSources?.add(this);
+        const currentContext = Signal.currentGetValueContext();
+        if (currentContext) {
+            if (this._allSources.has(currentContext.signal))
+                throw new Error(`Circular dependency: ${currentContext.signal} in ${this}`);
+            currentContext.newSources.add(this);
+        }
 
         if (this._isDirty) {
-            Signal._newSources = new Set();
-            Signal._currentContext = this;
-            this._value = this._getter();
+            const context = {
+                newSources: new Set(),
+                signal: this
+            };
+            Signal.withContext(context, () => {
+                this._value = this._getter();
+            });
             for (const source of this._sources)
-                if (!Signal._newSources.has(source)) source.unsubscribe(this);
-            for (const source of Signal._newSources)
+                if (!context.newSources.has(source)) source.unsubscribe(this);
+            for (const source of context.newSources)
                 if (!this._sources.has(source)) source.subscribe(this);
-            this._sources = Signal._newSources;
-            Signal._newSources = null;
-            Signal._currentContext = null;
+            this._sources = context.newSources;
             this._isDirty = false;
-
             this._allSources = new Set([
                 ...this._sources,
                 ...[...this._sources].flatMap(a => [...a._allSources])
