@@ -29,7 +29,9 @@ export default class Signal {
             ...[...this._sources].flatMap(a => [...a._allSources])
         ]);
 
-        for (const sub of this._subs) sub.calculate();
+        for (const sub of this._subs)
+            if (sub instanceof Signal) sub.calculate();
+            else sub(this._value);
     }
 
     getValue() {
@@ -39,6 +41,7 @@ export default class Signal {
         return this._value;
     }
 
+    /** sub here can be a signal, or a function, which will be passed the signal's new value whenever it changes */
     subscribe(sub) {
         this._subs.add(sub);
     }

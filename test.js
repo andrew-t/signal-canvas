@@ -1,6 +1,9 @@
 import { NFSignal as Signal } from "./Signal.js";
 
 const a = new Signal(4, "a");
+
+a.subscribe(value => console.log("A IS NOW", value));
+
 const alsoA = new Signal(a, "aa");
 const twiceA = new Signal(() => a.getValue() * 2, "2a");
 
