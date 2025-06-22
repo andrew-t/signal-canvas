@@ -10,6 +10,7 @@ export default class Signal {
     }
 
     setValue(getter) {
+        if (!(getter instanceof Function)) throw new Error("Getter must be function");
         this._getter = getter;
         this.markDirty();
     }
@@ -69,11 +70,30 @@ export default class Signal {
     }
 
     unsubscribe(sub) {
-        this._subs.remove(sub);
+        this._subs.delete(sub);
     }
 
     toString() {
         return `Signal(${this.name ?? "value"} = ${this._isDirty ? "???" : this._value})`;
+    }
+
+    /** equivalent to "await" — give it a signal and it'll give you the value, give it anything else and it'll give you the argument back out */
+    static value(val) {
+        if (val instanceof Signal) return val.getValue();
+        return val;
+    }
+    static subscribe(signal, callback) {
+        if (signal instanceof Signal) signal.subscribe(callback);
+    }
+    static unsubscribe(signal, callback) {
+        if (signal instanceof Signal) signal.unsubscribe(callback);
+    }
+
+    static map(object) {
+        if (object instanceof Signal) return object;
+        if (Array.isArray(object)) return new Signal(() => object.map(Signal.value));
+        if (typeof object !== "object") return new Signal(object);
+        return new Signal(() => Object.fromEntries(Object.entries(object).map(([name, value]) => [name, Signal.value(value)])));
     }
 }
 
@@ -91,5 +111,12 @@ export class NFSignal extends Signal {
         if (valueOrGetter instanceof Signal) return () => valueOrGetter.getValue();
         if (valueOrGetter instanceof Function) return valueOrGetter;
         return () => valueOrGetter;
+    }
+
+    static map(object) {
+        if (object instanceof Signal) return object;
+        if (Array.isArray(object)) return new NFSignal(() => object.map(NFSignal.value));
+        if (typeof object !== "object") return new NFSignal(object);
+        return new NFSignal(() => Object.fromEntries(Object.entries(object).map(([name, value]) => [name, NFSignal.value(value)])));
     }
 }
