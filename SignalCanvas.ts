@@ -15,7 +15,7 @@ export default class SignalCanvas {
     private ctx: CanvasRenderingContext2D;
 
     constructor(options: SignalMappable<SignalCanvasOptions>) {
-        this.setOptions(Signal.map<SignalCanvasOptions>(options));
+        this.setOptions(Signal.from(options));
     }
 
     setOptions(options: Signal<SignalCanvasOptions>) {
@@ -31,7 +31,7 @@ export default class SignalCanvas {
 
     /** options can be a signal too, or a { colour, zIndex } */
     add(element: Element, options: any = {}): void {
-        options = Signal.map(options);
+        options = Signal.from(options);
         this.elements.push({ element, options });
         element.subscribe(this.debouncedDraw);
         Signal.subscribe(options, this.debouncedDraw);

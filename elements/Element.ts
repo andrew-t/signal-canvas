@@ -1,16 +1,12 @@
-import { NFSignal as Signal, SignalSubscriber } from "../Signal.js";
+import { Getter, NFSignal as Signal, SignalSubscriber } from "../Signal.js";
 
-export type WithSignalOrElementProps<T> = T extends Array<any>
-    ? Array<T | Signal<T>> | Array<T | Signal<T> | Element<T>>
-    : { [key in keyof T]: T[key] | Element<T[key]> | Signal<T[key]> };
-
-export type ElementMappable<T> = T | Signal<T> | WithSignalOrElementProps<T> | (() => T);
+export type ElementMappable<T> = T | Signal<T> | Element<T> | Getter<T>;
 
 export default abstract class Element<T = any, O = any> {
     private params: Signal<T>;
 
     constructor(params: ElementMappable<T>) {
-        this.params = Element.mapToSignals(params);
+        this.params = Element.paramsSignalFrom(params);
     }
 
     getParams(): T {
@@ -29,15 +25,9 @@ export default abstract class Element<T = any, O = any> {
         return object;
     }
 
-    static mapToSignals<T>(object: ElementMappable<T>): Signal<T> {
-        if (object instanceof Signal) return object;
+    static paramsSignalFrom<T>(object: ElementMappable<T>): Signal<T> {
         if (object instanceof Element) return object.params;
-        if (object instanceof Function) return new Signal(object);
-        // @ts-ignore Pretty sure this is fine
-        if (Array.isArray(object)) return new Signal(() => object.map(Element.value));
-        if (typeof object !== "object") return new Signal(object);
-        // @ts-ignore Pretty sure this is fine
-        return new Signal(() => Object.fromEntries(Object.entries(object).map(([name, value]) => [name, Element.value(value)])));
+        return Signal.from(object);
     }
 
     subscribe(callback: SignalSubscriber<T>): void {

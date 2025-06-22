@@ -4,18 +4,14 @@ interface GetValueContext {
 }
 
 export type SignalSubscriber<T = any> = Signal<T> | ((signal?: Signal<T>) => unknown);
-
-export type WithSignalProps<T> = T extends Array<any>
-    ? Array<T[number] | Signal<T[number]>>
-    : { [key in keyof T]: T[key] | Signal<T[key]> };
-
-export type SignalMappable<T> = T | Signal<T> | WithSignalProps<T>;
+export type Getter<T> = () => T;
+export type SignalMappable<T> = T | Getter<T> | Signal<T>;
 
 export default class Signal<T = any> {
     private static getValueContextStack: GetValueContext[] = [];
     
     public name?: string;
-    private getter: () => T;
+    private getter: Getter<T>;
     private value: T;
 
     private subs = new Set<SignalSubscriber<T>>();
@@ -23,12 +19,12 @@ export default class Signal<T = any> {
     private allSources = new Set<Signal>();
     private isDirty = false;
 
-    constructor(getter: () => T, name?: string) {
+    constructor(getter: Getter<T>, name?: string) {
         this.name = name;
         this.setValue(getter);
     }
 
-    setValue(getter: () => T): void {
+    setValue(getter: Getter<T>): void {
         if (!(getter instanceof Function)) throw new Error("Getter must be function");
         this.getter = getter;
         this.markDirty();
@@ -106,40 +102,27 @@ export default class Signal<T = any> {
     static unsubscribe<T>(signal: Signal<T> | T, callback: SignalSubscriber<T>) : void {
         if (signal instanceof Signal) signal.unsubscribe(callback);
     }
-
-    static map<T>(object: SignalMappable<T>): Signal<T> {
-        if (object instanceof Signal) return object;
-        // @ts-ignore — TS doesn't know T[number][] is T but it is
-        if (Array.isArray(object)) return new Signal(() => object.map(Signal.value));
-        if (typeof object !== "object") return new Signal(() => object);
-        // @ts-ignore — ok i promise
-        return new Signal(() => Object.fromEntries(Object.entries(object).map(([name, value]) => [name, Signal.value(value)])));
-    }
 }
 
 /** This is a signal whose value is contractually not a function which allows us to skip some logic and simplify the syntax */
 export class NFSignal<T> extends Signal<T> {
-    constructor(valueOrGetter: T | (() => T), name?: string) {
+    constructor(valueOrGetter: T | (Getter<T>), name?: string) {
         super(NFSignal.actualGetter(valueOrGetter), name);
     }
 
-    setValue(valueOrGetter: T | (() => T)): void {
+    setValue(valueOrGetter: T | Getter<T>): void {
         super.setValue(NFSignal.actualGetter(valueOrGetter));
     }
 
-    static actualGetter<T>(valueOrGetter: T | (() => T)): () => T {
+    static actualGetter<T>(valueOrGetter: T | Getter<T>): Getter<T> {
         if (valueOrGetter instanceof Signal) return () => valueOrGetter.getValue();
         if (valueOrGetter instanceof Function) return valueOrGetter;
         return () => valueOrGetter;
     }
 
-    static map<T>(object: SignalMappable<T> | (() => T)): NFSignal<T> {
-        if (object instanceof Signal) return object;
-        if (object instanceof Function) return new Signal(object);
-        // @ts-ignore — TS doesn't know T[number][] is T but it is
-        if (Array.isArray(object)) return new NFSignal(() => object.map(NFSignal.value));
-        if (typeof object !== "object") return new NFSignal(object);
-        // @ts-ignore — ok i promise
-        return new NFSignal(() => Object.fromEntries(Object.entries(object).map(([name, value]) => [name, NFSignal.value(value)])));
+    static from<T>(object: T | Getter<T> | NFSignal<T>): NFSignal<T> {
+        if (object instanceof NFSignal) return object;
+        if (object instanceof Signal) throw new Error("Only NFSignals allowed here");
+        return new NFSignal(object);
     }
 }
