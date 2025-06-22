@@ -74,6 +74,7 @@ export default class SignalCanvas {
                     this.ctx.fill();
                     break;
                 case Line:
+                    if (!params.a || !params.b) break;
                     this.ctx.strokeStyle = options.colour ?? "black";
                     this.ctx.strokeWidth = options.width ?? 1;
                     this.ctx.setLineDash(options.dashes ?? []);
