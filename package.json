@@ -1,0 +1,11 @@
+{
+  "name": "signal-canvas",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "git@github.com:andrew-t/signal-canvas.git",
+  "author": "Andrew <fwf@andrewt.net>",
+  "license": "MIT",
+  "dependencies": {
+    "vite": "^6.3.5"
+  }
+}

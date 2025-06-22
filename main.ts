@@ -1,8 +1,8 @@
 // Import the classes we need to make this work
-import Line from "./elements/Line.js";
-import Point from "./elements/Point.js";
-import everyFrame from "./every-frame.js";
-import SignalCanvas from "./SignalCanvas.js";
+import Line from "./elements/Line.ts";
+import Point from "./elements/Point.ts";
+import everyFrame from "./every-frame.ts";
+import SignalCanvas from "./SignalCanvas.ts";
 
 // Start by defining some hard-coded elements
 const pointA = new Point({ x: 100, y: 100 });

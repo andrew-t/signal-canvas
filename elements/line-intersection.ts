@@ -1,4 +1,9 @@
-export default function lineIntersection(line1, line2) {
+import type { LineParams } from "./Line";
+import type { PointParams } from "./Point";
+
+export default function lineIntersection(line1: LineParams | null, line2: LineParams | null): PointParams | null {
+    // Any null points means we don't have two lines so we don't have an intersection
+    if (!line1?.a || !line2?.a || !line1.b || !line2.b) return null;
     const xDiff1 = line1.a.x - line1.b.x;
     const xDiff2 = line2.a.x - line2.b.x;
     const yDiff1 = line1.a.y - line1.b.y;
