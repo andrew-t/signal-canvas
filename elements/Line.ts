@@ -13,8 +13,18 @@ export interface LineOptions {
 }
 
 export default class Line extends Element<LineParams | null, LineOptions> {
-    constructor(params: ElementMappable<LineParams | null>) {
-        super(params);
+    constructor(a: ElementMappable<PointParams | null>, b: ElementMappable<PointParams | null>);
+    constructor(params: ElementMappable<LineParams | null>);
+    constructor(
+        a: ElementMappable<LineParams | null> | ElementMappable<PointParams | null>,
+        b?: ElementMappable<PointParams | null>
+    ) {
+        if (b)
+            super(() => ({
+                a: Element.value(a as ElementMappable<PointParams | null>),
+                b: Element.value(b),
+            }));
+        else super(a as ElementMappable<LineParams | null>);
     }
     
     draw(ctx: CanvasRenderingContext2D, options: LineOptions): void {

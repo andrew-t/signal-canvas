@@ -19,10 +19,9 @@ export default abstract class Element<T = any, O = any> {
 
     abstract draw(ctx: CanvasRenderingContext2D, options: O): void;
 
-    static value<T>(object: T | Signal<T> | Element<T>) {
+    static value<T>(object: T | Signal<T> | Element<T> | Getter<T>) {
         if (object instanceof Element) return object.getParams();
-        if (object instanceof Signal) return object.getValue();
-        return object;
+        return Signal.value(object);
     }
 
     static paramsSignalFrom<T>(object: ElementMappable<T>): Signal<T> {

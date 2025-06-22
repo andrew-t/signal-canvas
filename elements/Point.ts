@@ -1,6 +1,7 @@
+import { SignalMappable, NFSignal as Signal } from "../Signal.js";
 import Element, { ElementMappable } from "./Element.js";
 import lineIntersection from "./line-intersection.js";
-import type Line from "./Line.js";
+import type { LineParams } from "./Line.js";
 
 export interface PointParams {
     x: number;
@@ -13,8 +14,16 @@ export interface PointOptions {
 }
 
 export default class Point extends Element<PointParams | null, PointOptions> {
-    constructor(params: ElementMappable<PointParams | null>) {
-        super(params);
+    constructor(params: ElementMappable<PointParams | null>);
+    constructor(x: SignalMappable<number>, y: SignalMappable<number>);
+    constructor(a: ElementMappable<PointParams | null> | SignalMappable< number >, b?: SignalMappable<number>) {
+        if (b === undefined)
+            super(a as ElementMappable<PointParams | null>);
+        else
+            super(() => ({
+                x: Signal.value(a as SignalMappable<number>),
+                y: Signal.value(b)
+            }));
     }
 
     draw(ctx: CanvasRenderingContext2D, options: PointOptions): void {
@@ -26,7 +35,13 @@ export default class Point extends Element<PointParams | null, PointOptions> {
         ctx.fill();
     }
 
-    static lineIntersection(line1: Line, line2: Line) {
-        return new Point(() => lineIntersection(line1.getParams(), line2.getParams()));
+    static lineIntersection(
+        line1: ElementMappable<LineParams | null>,
+        line2: ElementMappable<LineParams | null>
+    ) {
+        return new Point(() => lineIntersection(
+            Element.value(line1),
+            Element.value(line2)
+        ));
     }
 }

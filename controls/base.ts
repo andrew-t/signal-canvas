@@ -43,7 +43,6 @@ export abstract class SignalInputBoolean<Options extends InputOptions> extends S
         this.input.addEventListener("input", () => this.value.setValue(this.input.checked));
         this.value.subscribe(() => this.input.checked = this.value.getValue());
         if (this.hasAttribute("checked")) this.value.setValue(!!this.getAttribute("checked"));
-        this.value.subscribe(() => console.log("CHECKED IS NOW", this.value.getValue()))
     }
 
     getValue(): boolean {

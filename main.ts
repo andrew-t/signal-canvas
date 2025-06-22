@@ -14,7 +14,11 @@ const pointA = new Point({ x: 25, y: 25 });
 
 // Hook into our slider and use it to define an element
 const xSlider = document.getElementById("x-slider") as SignalSlider;
-const staticLine = new Line(() => ({ a: { x: xSlider.getValue(), y: 275 }, b: { x: 275, y: 25 } }));
+const staticLine = new Line(
+    // We have to pass the start point in as a function so that it will update as we change the slider value
+    () => ({ x: xSlider.getValue(), y: 275 }),
+    { x: 275, y: 25 }
+);
 
 // Now a time-dependent element:
 const currentTime = timestamp();
@@ -29,7 +33,8 @@ const pointB = new Point(() => {
 });
 
 // Next, define some elements derived from the above
-const lineAB = new Line(() => ({ a: pointA.getParams(), b: pointB.getParams() }));
+// Note that these functions wire up all the automatic updates for us — we just pass the "ingredients" in and everything is taken care of
+const lineAB = new Line(pointA, pointB);
 const intersection = Point.lineIntersection(lineAB, staticLine);
 
 // Next, create the canvas we're going to draw on

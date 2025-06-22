@@ -114,6 +114,12 @@ export class NFSignal<T> extends Signal<T> {
         super.setValue(NFSignal.actualGetter(valueOrGetter));
     }
 
+    static value<T>(val: Signal<T> | Getter<T> | T): T {
+        if (val instanceof Signal) return val.getValue();
+        if (val instanceof Function) return val();
+        return val;
+    }
+
     static actualGetter<T>(valueOrGetter: T | Getter<T>): Getter<T> {
         if (valueOrGetter instanceof Signal) return () => valueOrGetter.getValue();
         if (valueOrGetter instanceof Function) return valueOrGetter;
