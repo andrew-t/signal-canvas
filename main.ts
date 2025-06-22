@@ -1,13 +1,13 @@
 // If we don't import this file, none of our web components will work. (Just removing the "type" keyword from the individual imports doesn't work — I think because Vite thinks it can optimise them out anyway.)
-import "./controls/index.ts";
+import "./src/controls/index.ts";
 
 // Import the classes we need to make this work
-import Line from "./elements/Line.ts";
-import Point from "./elements/Point.ts";
-import timestamp from "./every-frame.ts";
-import SignalCanvas from "./SignalCanvas.ts";
-import type SignalSlider from "./controls/signal-slider.ts";
-import type SignalCheckbox from "./controls/signal-checkbox.ts";
+import Line from "./src/elements/Line.ts";
+import Point from "./src/elements/Point.ts";
+import timestamp from "./src/every-frame.ts";
+import SignalCanvas from "./src/SignalCanvas.ts";
+import type SignalSlider from "./src/controls/signal-slider.ts";
+import type SignalCheckbox from "./src/controls/signal-checkbox.ts";
 
 // Start by defining some hard-coded elements
 const pointA = new Point({ x: 25, y: 25 });
