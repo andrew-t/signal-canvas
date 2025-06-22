@@ -1,4 +1,4 @@
-// We need to import the web components individually or Vite """helpfully""" optimises them out 🙃
+// If we don't import this file, none of our web components will work. (Just removing the "type" keyword from the individual imports doesn't work — I think because Vite thinks it can optimise them out anyway.)
 import "./controls/index.ts";
 
 // Import the classes we need to make this work
