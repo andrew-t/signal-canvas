@@ -6,24 +6,27 @@ import Line from "./elements/Line.ts";
 import Point from "./elements/Point.ts";
 import timestamp from "./every-frame.ts";
 import SignalCanvas from "./SignalCanvas.ts";
-import SignalSlider from "./controls/signal-slider.ts";
+import type SignalSlider from "./controls/signal-slider.ts";
+import type SignalCheckbox from "./controls/signal-checkbox.ts";
 
 // Start by defining some hard-coded elements
 const pointA = new Point({ x: 25, y: 25 });
 
+// Hook into our slider and use it to define an element
+const xSlider = document.getElementById("x-slider") as SignalSlider;
+const staticLine = new Line(() => ({ a: { x: xSlider.getValue(), y: 275 }, b: { x: 275, y: 25 } }));
+
 // Now a time-dependent element:
 const currentTime = timestamp();
+const animateCheckbox = document.getElementById("animate-checkbox") as SignalCheckbox;
 const pointB = new Point(() => {
-    const t = currentTime.getValue();
+    // Because we only call currentTime.getValue() when it's needed, we won't redraw every frame unless we're animating
+    const t = animateCheckbox.getValue() ? currentTime.getValue() : 0;
     return {
         x: 225 + Math.sin(t * 0.0017) * 50,
         y: 225 - Math.cos(t * 0.0023) * 50
     };
 });
-
-// Hook into our slider and use it to define an element
-const xSlider = document.getElementById("x-slider") as SignalSlider;
-const staticLine = new Line(() => ({ a: { x: xSlider.getValue(), y: 275 }, b: { x: 275, y: 25 } }));
 
 // Next, define some elements derived from the above
 const lineAB = new Line(() => ({ a: pointA.getParams(), b: pointB.getParams() }));

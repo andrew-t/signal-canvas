@@ -1,4 +1,4 @@
-import SignalInput, { InputOptions } from "./base.ts";
+import { InputOptions, SignalInputString } from "./base.ts";
 
 export interface SliderOptions extends InputOptions {
     min: number;
@@ -6,7 +6,7 @@ export interface SliderOptions extends InputOptions {
     step: number | null;
 };
 
-export default class SignalSlider extends SignalInput<number, SliderOptions> {
+export default class SignalSlider extends SignalInputString<number, SliderOptions> {
     constructor() {
         super(0, { min: 0, max: 1, step: null, label: "Number" });
         if (this.hasAttribute("min")) this.options.min = parseFloat(this.getAttribute("min")!);
@@ -20,8 +20,6 @@ export default class SignalSlider extends SignalInput<number, SliderOptions> {
         this.input.setAttribute("min", this.options.min.toString());
         this.input.setAttribute("max", this.options.max.toString());
         this.input.setAttribute("step", this.options.step?.toString() ?? "any");
-
-        this.value.setValue(parseFloat(this.getAttribute("defaultValue") ?? this.options.min.toString()));
     }
 
     parseValue(value: string): number {
