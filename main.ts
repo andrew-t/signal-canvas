@@ -45,7 +45,7 @@ document.body.appendChild(canvas.canvas);
 canvas.add(pointA, { colour: 'blue', zIndex: 1 });
 canvas.add(pointB, { colour: 'blue', zIndex: 1 });
 canvas.add(lineAB);
-canvas.add(staticLine, { colour: '#444', width: 0.5, dashes: [ 5, 2 ] });
+canvas.add(staticLine, { colour: '#444', width: 0.5, dashes: [ 5, 2 ], extendPastA: true, extendPastB: true });
 
 // The styling options can also be functions and these too will automatically update
 canvas.add(intersection, () => {

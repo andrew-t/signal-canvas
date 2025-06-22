@@ -10,6 +10,8 @@ export interface LineOptions {
     colour?: string;
     width?: number;
     dashes?: number[];
+    extendPastA?: boolean;
+    extendPastB?: boolean;
 }
 
 export default class Line extends Element<LineParams | null, LineOptions> {
@@ -27,15 +29,46 @@ export default class Line extends Element<LineParams | null, LineOptions> {
         else super(a as ElementMappable<LineParams | null>);
     }
     
-    draw(ctx: CanvasRenderingContext2D, options: LineOptions): void {
+    draw(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, options: LineOptions): void {
         const params = this.getParams();
         if (!params?.a || !params?.b) return;
+        if (params.a.x == params.b.x && params.a.y == params.b.y) return;
         ctx.strokeStyle = options.colour ?? "black";
         ctx.lineWidth = options.width ?? 1;
         ctx.setLineDash(options.dashes ?? []);
         ctx.beginPath();
-        ctx.moveTo(params.a.x, params.a.y);
-        ctx.lineTo(params.b.x, params.b.y);
+        let start = params.a;
+        let end = params.b;
+        if (options.extendPastA || options.extendPastB) {
+            const diff = normalisedDiff(start, end);
+            const sizeFactor = canvas.width + canvas.height;
+            if (options.extendPastA) {
+                const t = tParam(canvas, diff, start);
+                if (t > -sizeFactor) {
+                    const extra = t + sizeFactor;
+                    start = { x: start.x - diff.x * extra, y: start.y - diff.y * extra };
+                }
+            }
+            if (options.extendPastB) {
+                const t = tParam(canvas, diff, end);
+                if (t < sizeFactor) {
+                    const extra = sizeFactor - t;
+                    end = { x: end.x + diff.x * extra, y: end.y + diff.y * extra };
+                }
+            }
+        }
+        ctx.moveTo(start.x, start.y);
+        ctx.lineTo(end.x, end.y);
         ctx.stroke();
     }
+}
+
+function tParam(canvas: HTMLCanvasElement, direction: PointParams, point: PointParams) {
+    const centreToPoint = { x: point.x - canvas.width / 2, y: point.y - canvas.height / 2 };
+    return centreToPoint.x * direction.x + centreToPoint.y * direction.y;
+}
+
+function normalisedDiff(a: PointParams, b: PointParams): PointParams {
+    const len = Math.sqrt(a.x * a.x + b.x * b.x);
+    return { x: (b.x - a.x) / len, y: (b.y - a.y) / len };
 }

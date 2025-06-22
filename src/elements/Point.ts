@@ -26,7 +26,7 @@ export default class Point extends Element<PointParams | null, PointOptions> {
             }));
     }
 
-    draw(ctx: CanvasRenderingContext2D, options: PointOptions): void {
+    draw(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, options: PointOptions): void {
         const params = this.getParams();
         if (!params) return;
         ctx.fillStyle = options.colour ?? "black";

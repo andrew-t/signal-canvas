@@ -72,7 +72,7 @@ export default class SignalCanvas {
             }))
             .sort((a, b) => (a.options.zIndex ?? 0) - (b.options.zIndex ?? 0));
         for (const { element, options } of elements)
-            element.draw(this.ctx, options);
+            element.draw(this.canvas, this.ctx, options);
     }
 
     debouncedDraw = (): void => {
