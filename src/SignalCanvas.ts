@@ -7,6 +7,14 @@ export interface SignalCanvasOptions {
     background?: string;
 }
 
+// One day we might have a better way of doing this than "what is the third parameter to the draw function" but hey, this works
+type ElementOptions<T extends Element> = Parameters<T["draw"]>[2];
+
+export interface GlobalOptions {
+    zIndex?: number;
+    // TODO: maybe add "disabled" and "opacity" here?
+}
+
 export default class SignalCanvas {
     private elements: Array<{ element: Element, options: any }> = [];
     private drawRequested = false;
@@ -29,14 +37,17 @@ export default class SignalCanvas {
         return Signal.value(this.options);
     }
 
-    /** options can be a signal too, or a { colour, zIndex } */
-    add(element: Element, options: any = {}): void {
-        options = Signal.from(options);
-        this.elements.push({ element, options });
+    add<T extends Element>(
+        element: T,
+        options: SignalMappable<ElementOptions<T> & GlobalOptions> = {}
+    ): void {
+        const optionSignal = Signal.from(options);
+        this.elements.push({ element, options: optionSignal });
         element.subscribe(this.debouncedDraw);
-        Signal.subscribe(options, this.debouncedDraw);
+        optionSignal.subscribe(this.debouncedDraw);
         this.debouncedDraw();
     }
+
     remove(element: Element): void {
         element.unsubscribe(this.debouncedDraw);
         for (let i = this.elements.length - 1; i >= 0; --i) {
@@ -45,12 +56,6 @@ export default class SignalCanvas {
             this.elements.splice(i, 1);
         }
         this.debouncedDraw();
-    }
-
-    clear(): void {
-        const options = this.getOptions();
-        this.ctx.fillStyle = options.background ?? "white";
-        this.ctx.fillRect(0, 0, 300, 300);
     }
 
     private updateOptions(): void {
@@ -64,7 +69,9 @@ export default class SignalCanvas {
 
     draw(): void {
         this.drawRequested = false;
-        this.clear();
+        const options = this.getOptions();
+        this.ctx.fillStyle = options.background ?? "white";
+        this.ctx.fillRect(0, 0, 300, 300);
         const elements = [ ...this.elements ]
             .map(({ element, options}) => ({
                 element,

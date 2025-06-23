@@ -6,12 +6,16 @@ export interface LineParams {
     b: PointParams | null
 }
 
-export interface LineOptions {
+export interface LineDrawingOptions {
     colour?: string;
     width?: number;
     dashes?: number[];
+}
+
+export interface LineOptions extends LineDrawingOptions {
     extendPastA?: boolean;
     extendPastB?: boolean;
+    // TODO: support arrowheads
 }
 
 export default class Line extends Element<LineParams | null, LineOptions> {
@@ -28,14 +32,18 @@ export default class Line extends Element<LineParams | null, LineOptions> {
             }));
         else super(a as ElementMappable<LineParams | null>);
     }
+
+    static applyLineOptions(ctx: CanvasRenderingContext2D, options: LineDrawingOptions = {}) {
+        ctx.strokeStyle = options.colour ?? "black";
+        ctx.lineWidth = options.width ?? 1;
+        ctx.setLineDash(options.dashes ?? []);
+    }
     
     draw(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, options: LineOptions): void {
         const params = this.getParams();
         if (!params?.a || !params?.b) return;
         if (params.a.x == params.b.x && params.a.y == params.b.y) return;
-        ctx.strokeStyle = options.colour ?? "black";
-        ctx.lineWidth = options.width ?? 1;
-        ctx.setLineDash(options.dashes ?? []);
+        Line.applyLineOptions(ctx, options);
         ctx.beginPath();
         let start = params.a;
         let end = params.b;

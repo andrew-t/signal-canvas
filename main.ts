@@ -8,6 +8,8 @@ import timestamp from "./src/every-frame.ts";
 import SignalCanvas from "./src/SignalCanvas.ts";
 import type SignalSlider from "./src/controls/signal-slider.ts";
 import type SignalCheckbox from "./src/controls/signal-checkbox.ts";
+import Label, { TextAlign } from "./src/elements/Label.ts";
+import Circle from "./src/elements/Circle.ts";
 
 // Start by defining some hard-coded elements
 const pointA = new Point({ x: 25, y: 25 });
@@ -57,3 +59,14 @@ canvas.add(intersection, () => {
         zIndex: 1
     };
 });
+
+// Add and create it in one step if you won't need to refer to the element again
+canvas.add(
+    new Label("Intersection point", intersection.add({ x: -5, y: -5 })),
+    { font: "italic 16px serif", zIndex: 2, align: TextAlign.RightAlign, colour: '#060' }
+);
+
+canvas.add(
+    new Circle(pointB, pointB.distanceTo(intersection)),
+    { colour: '#ccf', zIndex: -1 }
+);

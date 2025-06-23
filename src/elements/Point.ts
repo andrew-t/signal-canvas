@@ -9,6 +9,7 @@ export interface PointParams {
 }
 
 export interface PointOptions {
+    // TODO: support other markers, like unfilled circles, squares, crosses, plusses, etc
     colour?: string;
     radius?: number;
 }
@@ -33,6 +34,24 @@ export default class Point extends Element<PointParams | null, PointOptions> {
         ctx.beginPath();
         ctx.arc(params.x, params.y, options.radius ?? 5, 0, Math.PI * 2, true);
         ctx.fill();
+    }
+
+    add(diff: ElementMappable<PointParams | null>) {
+        return new Point(() => {
+            const i = this.getParams();
+            const d = Element.value(diff);
+            if (!d || !i) return null;
+            return { x: i.x + d.x, y: i.y + d.y };
+        });
+    }
+
+    distanceTo(other: ElementMappable<PointParams | null>) {
+        return new Signal<number | null>(() => {
+            const i = this.getParams();
+            const o = Element.value(other);
+            if (!o || !i) return null;
+            return Math.sqrt((i.x - o.x) ** 2 + (i.y - o.y) ** 2);
+        });
     }
 
     static lineIntersection(
