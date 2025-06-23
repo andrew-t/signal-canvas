@@ -2,6 +2,7 @@ import Line, { LineDrawingOptions } from "./Line";
 import type { PointParams } from "./Point";
 import Element, { ElementMappable } from "./Element.js";
 import { NFSignal as Signal, SignalMappable } from "../Signal.js";
+import type SignalCanvas from "../SignalCanvas.js";
 
 export interface CircleParams {
     centre: PointParams | null;
@@ -29,7 +30,7 @@ export default class Circle extends Element<CircleParams, LineDrawingOptions> {
 
     // TODO: support making a circle from three points
 
-    draw(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, options: LineDrawingOptions): void {
+    draw({ ctx }: SignalCanvas, options: LineDrawingOptions): void {
         const params = this.getParams();
         if (!params.centre || !params.radius) return;
         Line.applyLineOptions(ctx, options);

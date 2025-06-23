@@ -8,28 +8,34 @@ export interface SignalCanvasOptions {
 }
 
 // One day we might have a better way of doing this than "what is the third parameter to the draw function" but hey, this works
-type ElementOptions<T extends Element> = Parameters<T["draw"]>[2];
+type ElementOptions<T extends Element> = Parameters<T["draw"]>[1];
 
 export interface GlobalOptions {
     zIndex?: number;
     // TODO: maybe add "disabled" and "opacity" here?
 }
 
-export default class SignalCanvas {
-    private elements: Array<{ element: Element, options: any }> = [];
+export default class SignalCanvas extends HTMLElement {
+    private elements: Array<{ element: Element, options: Signal<GlobalOptions> }> = [];
     private drawRequested = false;
     private options: Signal<SignalCanvasOptions>;
-    public canvas: HTMLCanvasElement;
-    private ctx: CanvasRenderingContext2D;
+    public canvas = document.createElement("canvas") as HTMLCanvasElement;
+    public ctx: CanvasRenderingContext2D;
 
-    constructor(options: SignalMappable<SignalCanvasOptions>) {
-        this.setOptions(Signal.from(options));
+    constructor() {
+        super();
+        this.appendChild(this.canvas);
+        this.setOptions({
+            width: parseInt(this.getAttribute("width") ?? "100", 10),
+            height: parseInt(this.getAttribute("height") ?? "100", 10),
+            background: this.getAttribute("background") ?? "white"
+        });
     }
 
-    setOptions(options: Signal<SignalCanvasOptions>) {
-        Signal.unsubscribe(options, this.updateOptions);
-        this.options = options;
-        Signal.subscribe(options, this.updateOptions);
+    setOptions(options: SignalMappable<SignalCanvasOptions>) {
+        this.options = Signal.from(options);
+        this.options.unsubscribe(this.updateOptions);
+        this.options.subscribe(this.updateOptions);
         this.updateOptions();
     }
 
@@ -48,11 +54,12 @@ export default class SignalCanvas {
         this.debouncedDraw();
     }
 
-    remove(element: Element): void {
+    // this is called "delete" because HTML elements come with a function called "remove" that does something else
+    delete(element: Element): void {
         element.unsubscribe(this.debouncedDraw);
         for (let i = this.elements.length - 1; i >= 0; --i) {
             if (this.elements[i].element != element) continue;
-            Signal.unsubscribe(this.elements[i].options, this.debouncedDraw);
+            this.elements[i].options.unsubscribe(this.debouncedDraw);
             this.elements.splice(i, 1);
         }
         this.debouncedDraw();
@@ -60,7 +67,6 @@ export default class SignalCanvas {
 
     private updateOptions(): void {
         const options = this.getOptions();
-        this.canvas = document.createElement("canvas");
         this.canvas.width = options.width;
         this.canvas.height = options.height;
         this.ctx = this.canvas.getContext('2d')!;
@@ -79,12 +85,14 @@ export default class SignalCanvas {
             }))
             .sort((a, b) => (a.options.zIndex ?? 0) - (b.options.zIndex ?? 0));
         for (const { element, options } of elements)
-            element.draw(this.canvas, this.ctx, options);
+            element.draw(this, options);
     }
 
     debouncedDraw = (): void => {
         if (this.drawRequested) return;
         this.drawRequested = true;
         setTimeout(() => this.draw(), 0);
-    }
+    };
 }
+
+window.customElements.define("signal-canvas", SignalCanvas);

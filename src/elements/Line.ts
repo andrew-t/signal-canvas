@@ -1,5 +1,6 @@
 import Element, { ElementMappable } from "./Element.js";
 import type { PointParams } from "./Point.js";
+import type SignalCanvas from "../SignalCanvas.js";
 
 export interface LineParams {
     a: PointParams | null,
@@ -39,7 +40,7 @@ export default class Line extends Element<LineParams | null, LineOptions> {
         ctx.setLineDash(options.dashes ?? []);
     }
     
-    draw(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, options: LineOptions): void {
+    draw({ canvas, ctx }: SignalCanvas, options: LineOptions): void {
         const params = this.getParams();
         if (!params?.a || !params?.b) return;
         if (params.a.x == params.b.x && params.a.y == params.b.y) return;

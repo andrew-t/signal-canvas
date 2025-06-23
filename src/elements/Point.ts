@@ -2,6 +2,7 @@ import { SignalMappable, NFSignal as Signal } from "../Signal.js";
 import Element, { ElementMappable } from "./Element.js";
 import lineIntersection from "./line-intersection.js";
 import type { LineParams } from "./Line.js";
+import type SignalCanvas from "../SignalCanvas.js";
 
 export interface PointParams {
     x: number;
@@ -27,7 +28,7 @@ export default class Point extends Element<PointParams | null, PointOptions> {
             }));
     }
 
-    draw(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, options: PointOptions): void {
+    draw({ ctx }: SignalCanvas, options: PointOptions): void {
         const params = this.getParams();
         if (!params) return;
         ctx.fillStyle = options.colour ?? "black";

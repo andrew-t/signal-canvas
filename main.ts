@@ -1,11 +1,12 @@
-// If we don't import this file, none of our web components will work. (Just removing the "type" keyword from the individual imports doesn't work — I think because Vite thinks it can optimise them out anyway.)
+// If we don't import these files, none of our web components will work. (Just removing the "type" keyword from the individual imports doesn't work — I think because Vite thinks it can optimise them out anyway.)
 import "./src/controls/index.ts";
+import "./src/SignalCanvas.ts";
 
 // Import the classes we need to make this work
 import Line from "./src/elements/Line.ts";
 import Point from "./src/elements/Point.ts";
 import timestamp from "./src/every-frame.ts";
-import SignalCanvas from "./src/SignalCanvas.ts";
+import type SignalCanvas from "./src/SignalCanvas.ts";
 import type SignalSlider from "./src/controls/signal-slider.ts";
 import type SignalCheckbox from "./src/controls/signal-checkbox.ts";
 import Label, { TextAlign } from "./src/elements/Label.ts";
@@ -39,9 +40,8 @@ const pointB = new Point(() => {
 const lineAB = new Line(pointA, pointB);
 const intersection = Point.lineIntersection(lineAB, staticLine);
 
-// Next, create the canvas we're going to draw on
-const canvas = new SignalCanvas({ width: 300, height: 300, background: "#eee" });
-document.body.appendChild(canvas.canvas);
+// Next, hook up to the canvas we're going to draw on
+const canvas = document.getElementById("test-canvas") as SignalCanvas;
 
 // Add the elements we defined to the canvas, with some style information
 canvas.add(pointA, { colour: 'blue', zIndex: 1 });

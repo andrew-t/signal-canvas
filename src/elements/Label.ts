@@ -1,6 +1,7 @@
 import { NFSignal as Signal, SignalMappable } from "../Signal.js";
 import Element, { ElementMappable } from "./Element.js";
 import type { PointParams } from "./Point.js";
+import type SignalCanvas from "../SignalCanvas.js";
 
 export interface LabelParams {
     // There's no real reason to make this null, but it makes it more convenient to program against
@@ -28,7 +29,7 @@ export default class Label extends Element<LabelParams, LabelOptions> {
         }));
     }
 
-    draw(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, options: LabelOptions = {}): void {
+    draw({ ctx }: SignalCanvas, options: LabelOptions = {}): void {
         const { location, text } = this.getParams();
         if (!location || !text) return;
         ctx.font = options.font ?? Label.defaultFont;

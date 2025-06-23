@@ -1,4 +1,5 @@
 import { Getter, NFSignal as Signal, SignalSubscriber } from "../Signal.js";
+import type SignalCanvas from "../SignalCanvas.js";
 
 export type ElementMappable<T> = T | Signal<T> | Element<T> | Getter<T>;
 
@@ -22,7 +23,7 @@ export default abstract class Element<T = any, O = any> {
         this.params.setValue(value);
     }
 
-    abstract draw(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, options: O): void;
+    abstract draw(canvas: SignalCanvas, options: O): void;
 
     static value<T>(object: T | Signal<T> | Element<T> | Getter<T>) {
         if (object instanceof Element) return object.getParams();

@@ -1,5 +1,6 @@
 import { NFSignal as Signal } from "../Signal";
 import Element from "./Element.ts";
+import type SignalCanvas from "../SignalCanvas.js";
 
 // TODO: maybe this should allow tranforming the canvas? not sure, haven't worked out entirely what this is for yet
 
@@ -13,7 +14,7 @@ export interface GroupParams {
 };
 
 export default class Group extends Element<GroupParams, {}> {    
-    draw(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, options: {}): void {
+    draw(canvas: SignalCanvas, options: {}): void {
         const elements = this.getParams()
             .elements
             .map(({ element, options}) => ({
@@ -22,6 +23,6 @@ export default class Group extends Element<GroupParams, {}> {
             }))
             .sort((a, b) => (a.options?.zIndex ?? 0) - (b.options?.zIndex ?? 0));
         for (const { element, options } of elements)
-            element.draw(canvas, ctx, options);
+            element.draw(canvas, options);
     }
 }
