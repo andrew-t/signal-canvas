@@ -1,5 +1,5 @@
 import { SignalMappable, NFSignal as Signal } from "../Signal.js";
-import Element, { ElementMappable } from "./Element.js";
+import Element, { ElementMappable, Source } from "./Element.js";
 import lineIntersection from "./line-intersection.js";
 import type { LineParams } from "./Line.js";
 import type SignalCanvas from "../SignalCanvas.js";
@@ -17,28 +17,25 @@ export interface PointOptions extends GlobalOptions {
 }
 
 export default class Point extends Element<PointParams | null, PointOptions> {
-    // TODO: tidy up constructors so they take undefined for the options
-    // or maybe make them static factory methods instead????
-    constructor(params: ElementMappable<PointParams | null>, options: ElementMappable<PointOptions>);
-    constructor(x: SignalMappable<number>, y: SignalMappable<number>, options: ElementMappable<PointOptions>);
+    constructor(params: ElementMappable<PointParams | null>);
+    constructor(x: SignalMappable<number>, y: SignalMappable<number>);
     constructor(
         a: ElementMappable<PointParams | null> | SignalMappable< number >,
-        b: SignalMappable<number> | ElementMappable<PointOptions>,
-        c?: ElementMappable<PointOptions>
+        b?: SignalMappable<number>
     ) {
-        if (c === undefined)
+        if (b === undefined)
             super(
                 a as ElementMappable<PointParams | null>,
-                b as ElementMappable<PointOptions>
+                {}
             );
         else
             super(
-            () => ({
-                x: Signal.value(a as SignalMappable<number>),
-                y: Signal.value(b as SignalMappable<number>)
-            }),
-            c as ElementMappable<PointOptions>
-        );
+                () => ({
+                    x: Signal.value(a as SignalMappable<number>),
+                    y: Signal.value(b as SignalMappable<number>)
+                }),
+                {}
+            );
     }
 
     draw({ ctx }: SignalCanvas): void {
@@ -57,7 +54,7 @@ export default class Point extends Element<PointParams | null, PointOptions> {
             const d = Element.value(diff);
             if (!d || !i) return null;
             return { x: i.x + d.x, y: i.y + d.y };
-        }, () => this.getOptions());
+        }).setOptions(() => this.getOptions());
     }
 
     distanceTo(other: ElementMappable<PointParams | null>) {
@@ -71,12 +68,11 @@ export default class Point extends Element<PointParams | null, PointOptions> {
 
     static lineIntersection(
         line1: ElementMappable<LineParams | null>,
-        line2: ElementMappable<LineParams | null>,
-        options?: ElementMappable<PointOptions>,
+        line2: ElementMappable<LineParams | null>
     ) {
         return new Point(() => lineIntersection(
             Element.value(line1),
             Element.value(line2)
-        ), options ?? {});
+        ));
     }
 }

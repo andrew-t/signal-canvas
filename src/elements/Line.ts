@@ -21,24 +21,23 @@ export interface LineOptions extends LineDrawingOptions {
 }
 
 export default class Line extends Element<LineParams | null, LineOptions> {
-    constructor(a: ElementMappable<PointParams | null>, b: ElementMappable<PointParams | null>, options: ElementMappable<LineOptions>);
-    constructor(params: ElementMappable<LineParams | null>, options: ElementMappable<LineOptions>);
+    constructor(a: ElementMappable<PointParams | null>, b: ElementMappable<PointParams | null>);
+    constructor(params: ElementMappable<LineParams | null>);
     constructor(
         a: ElementMappable<LineParams | null> | ElementMappable<PointParams | null>,
-        b: ElementMappable<PointParams | null> | ElementMappable<LineOptions>,
-        c?: ElementMappable<LineOptions>
+        b?: ElementMappable<PointParams | null> | ElementMappable<LineOptions>
     ) {
-        if (c)
+        if (b)
             super(
                 () => ({
                     a: Element.value(a as ElementMappable<PointParams | null>),
                     b: Element.value(b as ElementMappable<PointParams | null>),
                 }),
-                c as ElementMappable<LineOptions>
+                {}
             );
         else super(
             a as ElementMappable<LineParams | null>,
-            b as ElementMappable<LineOptions>
+            {}
         );
     }
 

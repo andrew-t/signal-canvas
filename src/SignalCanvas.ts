@@ -42,20 +42,22 @@ export default class SignalCanvas extends HTMLElement {
         return Signal.value(this.options);
     }
 
-    add<T extends Element>(element: T): void {
+    add<T extends Element>(element: T): T {
         this.elements.push(element);
         element.subscribe(this.debouncedDraw);
         this.debouncedDraw();
+        return element;
     }
 
     // this is called "delete" because HTML elements come with a function called "remove" that does something else
-    delete(element: Element): void {
+    delete<T extends Element>(element: T): T {
         element.unsubscribe(this.debouncedDraw);
         for (let i = this.elements.length - 1; i >= 0; --i) {
             if (this.elements[i] != element) continue;
             this.elements.splice(i, 1);
         }
         this.debouncedDraw();
+        return element;
     }
 
     private updateOptions(): void {

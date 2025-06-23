@@ -5,6 +5,9 @@ interface GetValueContext {
 
 export type SignalSubscriber<T = any> = Signal<T> | ((signal?: Signal<T>) => unknown);
 export type Getter<T> = () => T;
+
+// TODO: it'd be real nice if we could support passing in sliders directly
+// export type SignalMappable<T> = T | Getter<T> | Signal<T> | SignalInputBase<T, any>;
 export type SignalMappable<T> = T | Getter<T> | Signal<T>;
 
 export default class Signal<T = any> {
@@ -126,7 +129,7 @@ export class NFSignal<T> extends Signal<T> {
         return () => valueOrGetter;
     }
 
-    static from<T>(object: T | Getter<T> | NFSignal<T>): NFSignal<T> {
+    static from<T>(object: SignalMappable<T>): NFSignal<T> {
         if (object instanceof NFSignal) return object;
         if (object instanceof Signal) throw new Error("Only NFSignals allowed here");
         return new NFSignal(object);
