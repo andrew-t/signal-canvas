@@ -1,13 +1,14 @@
 import Element, { ElementMappable } from "./Element.js";
 import type { PointParams } from "./Point.js";
 import type SignalCanvas from "../SignalCanvas.js";
+import type { GlobalOptions } from "../SignalCanvas.js";
 
 export interface LineParams {
     a: PointParams | null,
     b: PointParams | null
 }
 
-export interface LineDrawingOptions {
+export interface LineDrawingOptions extends GlobalOptions {
     colour?: string;
     width?: number;
     dashes?: number[];
@@ -20,18 +21,25 @@ export interface LineOptions extends LineDrawingOptions {
 }
 
 export default class Line extends Element<LineParams | null, LineOptions> {
-    constructor(a: ElementMappable<PointParams | null>, b: ElementMappable<PointParams | null>);
-    constructor(params: ElementMappable<LineParams | null>);
+    constructor(a: ElementMappable<PointParams | null>, b: ElementMappable<PointParams | null>, options: ElementMappable<LineOptions>);
+    constructor(params: ElementMappable<LineParams | null>, options: ElementMappable<LineOptions>);
     constructor(
         a: ElementMappable<LineParams | null> | ElementMappable<PointParams | null>,
-        b?: ElementMappable<PointParams | null>
+        b: ElementMappable<PointParams | null> | ElementMappable<LineOptions>,
+        c?: ElementMappable<LineOptions>
     ) {
-        if (b)
-            super(() => ({
-                a: Element.value(a as ElementMappable<PointParams | null>),
-                b: Element.value(b),
-            }));
-        else super(a as ElementMappable<LineParams | null>);
+        if (c)
+            super(
+                () => ({
+                    a: Element.value(a as ElementMappable<PointParams | null>),
+                    b: Element.value(b as ElementMappable<PointParams | null>),
+                }),
+                c as ElementMappable<LineOptions>
+            );
+        else super(
+            a as ElementMappable<LineParams | null>,
+            b as ElementMappable<LineOptions>
+        );
     }
 
     static applyLineOptions(ctx: CanvasRenderingContext2D, options: LineDrawingOptions = {}) {
@@ -40,8 +48,9 @@ export default class Line extends Element<LineParams | null, LineOptions> {
         ctx.setLineDash(options.dashes ?? []);
     }
     
-    draw({ canvas, ctx }: SignalCanvas, options: LineOptions): void {
+    draw({ canvas, ctx }: SignalCanvas): void {
         const params = this.getParams();
+        const options = this.getOptions();
         if (!params?.a || !params?.b) return;
         if (params.a.x == params.b.x && params.a.y == params.b.y) return;
         Line.applyLineOptions(ctx, options);

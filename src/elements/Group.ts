@@ -1,28 +1,39 @@
-import { NFSignal as Signal } from "../Signal";
-import Element from "./Element.ts";
+import { NFSignal as Signal, SignalMappable } from "../Signal";
+import Element, { ElementMappable } from "./Element.ts";
 import type SignalCanvas from "../SignalCanvas.js";
+import { GlobalOptions } from "../SignalCanvas.js";
 
 // TODO: maybe this should allow tranforming the canvas? not sure, haven't worked out entirely what this is for yet
 
-export interface ElementWithOptions<T = unknown> {
-    element: Element<any, T>;
-    options?: (T & { zIndex?: number }) | null;
-}
-
 export interface GroupParams {
-    elements: Array<ElementWithOptions>;
+    elements: Element[];
 };
 
-export default class Group extends Element<GroupParams, {}> {    
-    draw(canvas: SignalCanvas, options: {}): void {
-        const elements = this.getParams()
-            .elements
-            .map(({ element, options}) => ({
-                element,
-                options: Signal.value(options)
-            }))
-            .sort((a, b) => (a.options?.zIndex ?? 0) - (b.options?.zIndex ?? 0));
-        for (const { element, options } of elements)
-            element.draw(canvas, options);
+export abstract class GroupBase<T, O extends GlobalOptions> extends Element<T, O> {
+    protected elements: Signal<Element[]>;
+
+    constructor(
+        params: ElementMappable<T>,
+        options: ElementMappable<O>,
+        elements: ElementMappable<Element[]>
+    ) {
+        super(params, options);
+        this.elements = Element.paramsSignalFrom(elements);
+    }
+
+    draw(canvas: SignalCanvas): void {
+        const elements = this.elements.getValue()
+            .filter((element) => !element.getOptions()?.disabled)
+            .sort((a, b) =>
+                (a.getOptions()?.zIndex ?? 0) -
+                (b.getOptions()?.zIndex ?? 0));
+        for (const element of elements)
+            element.draw(canvas);
+    }
+}
+
+export default class Group extends GroupBase<null, {}> {
+    constructor(elements: ElementMappable<Element[]>) {
+        super(null, {}, elements);
     }
 }

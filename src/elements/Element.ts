@@ -1,5 +1,6 @@
 import { Getter, NFSignal as Signal, SignalSubscriber } from "../Signal.js";
 import type SignalCanvas from "../SignalCanvas.js";
+import { GlobalOptions } from "../SignalCanvas.js";
 
 export type ElementMappable<T> = T | Signal<T> | Element<T> | Getter<T>;
 
@@ -8,22 +9,32 @@ export type ElementMappable<T> = T | Signal<T> | Element<T> | Getter<T>;
 // it also happens to make it quite nice to just grab a point and use it as one end of a line, without accidentally pulling in and depending on all its style information.
 // honestly it probably doesn't matter much but this way works quite nicely.
 // it's a bit inelegant that the style options are in the canvas rather than here, but i don't know if that matters really, and i guess it probably makes the z-filter sort 0.01% faster
-export default abstract class Element<T = any, O = any> {
+export default abstract class Element<T = any, O extends GlobalOptions = GlobalOptions> {
     private params: Signal<T>;
+    private options: Signal<O>;
 
-    constructor(params: ElementMappable<T>) {
+    constructor(params: ElementMappable<T>, options: ElementMappable<O>) {
         this.params = Element.paramsSignalFrom(params);
+        this.options = Element.paramsSignalFrom(options);
     }
 
     getParams(): T {
         return this.params.getValue();
     }
 
+    getOptions(): O {
+        return this.options.getValue();
+    }
+
     setParams(value: T | (() => T)): void {
         this.params.setValue(value);
     }
 
-    abstract draw(canvas: SignalCanvas, options: O): void;
+    setOptions(value: O | (() => O)): void {
+        this.options.setValue(value);
+    }
+
+    abstract draw(canvas: SignalCanvas): void;
 
     static value<T>(object: T | Signal<T> | Element<T> | Getter<T>) {
         if (object instanceof Element) return object.getParams();
@@ -35,11 +46,29 @@ export default abstract class Element<T = any, O = any> {
         return Signal.from(object);
     }
 
-    subscribe(callback: SignalSubscriber<T>): void {
+    subscribeParams(callback: SignalSubscriber<T>): void {
         this.params.subscribe(callback);
     }
 
-    unsubscribe(callback: SignalSubscriber<T>): void {
+    unsubscribeParams(callback: SignalSubscriber<T>): void {
         this.params.unsubscribe(callback);
+    }
+
+    subscribeOptions(callback: SignalSubscriber<O>): void {
+        this.options.subscribe(callback);
+    }
+
+    unsubscribeOptions(callback: SignalSubscriber<O>): void {
+        this.options.unsubscribe(callback);
+    }
+
+    subscribe(callback: () => void): void {
+        this.params.subscribe(callback);
+        this.options.subscribe(callback);
+    }
+
+    unsubscribe(callback: () => void): void {
+        this.params.unsubscribe(callback);
+        this.options.unsubscribe(callback);
     }
 }

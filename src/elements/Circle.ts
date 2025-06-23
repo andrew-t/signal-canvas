@@ -14,14 +14,23 @@ export interface CircleParams {
 }
 
 export default class Circle extends Element<CircleParams, LineDrawingOptions> {
-    constructor(params: ElementMappable<CircleParams>);
-    constructor(centre: ElementMappable<PointParams | null>, radius: SignalMappable<number | null>);
-    constructor(params: ElementMappable<PointParams | null> | ElementMappable<CircleParams>, radius?: SignalMappable<number | null>) {
-        if (radius !== undefined) super(() => ({
-            centre: Element.value(params as ElementMappable<PointParams | null>),
-            radius: Signal.value(radius)
-        }));
-        else super(params as ElementMappable<CircleParams>);
+    constructor(params: ElementMappable<CircleParams>, options: ElementMappable<LineDrawingOptions>);
+    constructor(centre: ElementMappable<PointParams | null>, radius: SignalMappable<number | null>, options: ElementMappable<LineDrawingOptions>);
+    constructor(
+        params: ElementMappable<PointParams | null> | ElementMappable<CircleParams>,
+        radius: SignalMappable<number | null> | ElementMappable<LineDrawingOptions>,
+        options?: ElementMappable<LineDrawingOptions>
+    ) {
+        if (radius !== undefined) super(
+            () => ({
+                centre: Element.value(params as ElementMappable<PointParams | null>),
+                radius: Signal.value(radius as SignalMappable<number | null>)
+            }),
+            options as ElementMappable<LineDrawingOptions>);
+        else super(
+            params as ElementMappable<CircleParams>,
+            radius as ElementMappable<LineDrawingOptions>
+        );
     }
 
     getCentre() {
@@ -30,8 +39,9 @@ export default class Circle extends Element<CircleParams, LineDrawingOptions> {
 
     // TODO: support making a circle from three points
 
-    draw({ ctx }: SignalCanvas, options: LineDrawingOptions): void {
+    draw({ ctx }: SignalCanvas): void {
         const params = this.getParams();
+        const options = this.getOptions();
         if (!params.centre || !params.radius) return;
         Line.applyLineOptions(ctx, options);
         ctx.beginPath();

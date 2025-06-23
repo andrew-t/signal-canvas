@@ -3,34 +3,48 @@ import Element, { ElementMappable } from "./Element.js";
 import lineIntersection from "./line-intersection.js";
 import type { LineParams } from "./Line.js";
 import type SignalCanvas from "../SignalCanvas.js";
+import { GlobalOptions } from "../SignalCanvas.js";
 
 export interface PointParams {
     x: number;
     y: number;
 }
 
-export interface PointOptions {
+export interface PointOptions extends GlobalOptions {
     // TODO: support other markers, like unfilled circles, squares, crosses, plusses, etc
     colour?: string;
     radius?: number;
 }
 
 export default class Point extends Element<PointParams | null, PointOptions> {
-    constructor(params: ElementMappable<PointParams | null>);
-    constructor(x: SignalMappable<number>, y: SignalMappable<number>);
-    constructor(a: ElementMappable<PointParams | null> | SignalMappable< number >, b?: SignalMappable<number>) {
-        if (b === undefined)
-            super(a as ElementMappable<PointParams | null>);
+    // TODO: tidy up constructors so they take undefined for the options
+    // or maybe make them static factory methods instead????
+    constructor(params: ElementMappable<PointParams | null>, options: ElementMappable<PointOptions>);
+    constructor(x: SignalMappable<number>, y: SignalMappable<number>, options: ElementMappable<PointOptions>);
+    constructor(
+        a: ElementMappable<PointParams | null> | SignalMappable< number >,
+        b: SignalMappable<number> | ElementMappable<PointOptions>,
+        c?: ElementMappable<PointOptions>
+    ) {
+        if (c === undefined)
+            super(
+                a as ElementMappable<PointParams | null>,
+                b as ElementMappable<PointOptions>
+            );
         else
-            super(() => ({
+            super(
+            () => ({
                 x: Signal.value(a as SignalMappable<number>),
-                y: Signal.value(b)
-            }));
+                y: Signal.value(b as SignalMappable<number>)
+            }),
+            c as ElementMappable<PointOptions>
+        );
     }
 
-    draw({ ctx }: SignalCanvas, options: PointOptions): void {
+    draw({ ctx }: SignalCanvas): void {
         const params = this.getParams();
         if (!params) return;
+        const options = this.getOptions();
         ctx.fillStyle = options.colour ?? "black";
         ctx.beginPath();
         ctx.arc(params.x, params.y, options.radius ?? 5, 0, Math.PI * 2, true);
@@ -43,7 +57,7 @@ export default class Point extends Element<PointParams | null, PointOptions> {
             const d = Element.value(diff);
             if (!d || !i) return null;
             return { x: i.x + d.x, y: i.y + d.y };
-        });
+        }, () => this.getOptions());
     }
 
     distanceTo(other: ElementMappable<PointParams | null>) {
@@ -57,11 +71,12 @@ export default class Point extends Element<PointParams | null, PointOptions> {
 
     static lineIntersection(
         line1: ElementMappable<LineParams | null>,
-        line2: ElementMappable<LineParams | null>
+        line2: ElementMappable<LineParams | null>,
+        options?: ElementMappable<PointOptions>,
     ) {
         return new Point(() => lineIntersection(
             Element.value(line1),
             Element.value(line2)
-        ));
+        ), options ?? {});
     }
 }
