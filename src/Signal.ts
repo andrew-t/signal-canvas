@@ -3,7 +3,8 @@ interface GetValueContext {
     newSources: Set<Signal>;
 }
 
-export type SignalSubscriber<T = any> = Signal<T> | ((signal?: Signal<T>) => unknown);
+export type SignalSubscriberFunction<T = any> = ((signal?: Signal<T>) => unknown);
+export type SignalSubscriber<T = any> = Signal<T> | SignalSubscriberFunction<T>;
 export type Getter<T> = () => T;
 
 // TODO: it'd be real nice if we could support passing in sliders directly
@@ -80,8 +81,11 @@ export default class Signal<T = any> {
     }
 
     /** sub here can be a signal, or a function, which will be passed the signal's new value whenever it changes */
-    subscribe(sub: SignalSubscriber<T>): void {
+    subscribe(sub: SignalSubscriber<T>): void;
+    subscribe(sub: SignalSubscriberFunction<T>, options: { runNow?: boolean }): void;
+    subscribe(sub: SignalSubscriber<T>, options: { runNow?: boolean } = {}): void {
         this.subs.add(sub);
+        if (options.runNow) (sub as SignalSubscriberFunction<T>)(this);
     }
 
     unsubscribe(sub: SignalSubscriber<T>): void {

@@ -5,13 +5,13 @@ import "./src/SignalCanvas.ts";
 // Import the classes we need to make this work
 import Line from "./src/elements/Line.ts";
 import Point from "./src/elements/Point.ts";
-import timestamp from "./src/every-frame.ts";
+import timestamp from "./src/utils/every-frame.ts";
 import type SignalCanvas from "./src/SignalCanvas.ts";
 import type SignalSlider from "./src/controls/signal-slider.ts";
 import type SignalCheckbox from "./src/controls/signal-checkbox.ts";
 import Label, { TextAlign } from "./src/elements/Label.ts";
 import Circle from "./src/elements/Circle.ts";
-import Angle from "./src/elements/Angle.ts";
+import Angle, { AngleUnit } from "./src/elements/Angle.ts";
 
 // Start by defining some hard-coded elements
 const pointA = new Point({ x: 25, y: 25 })
@@ -85,7 +85,14 @@ canvas.add(
 
 // You can also call .setOptions on the return from .add if that's simpler
 canvas.add(new Angle(pointA, intersection, { x: 275, y: 25 }))
-    .setOptions({ line: { colour: '#06c' }, zIndex: -1 });
+    .setOptions({
+        line: { colour: '#06c' },
+        zIndex: -1,
+        showValue: true,
+        name: "θ",
+        decimalPlaces: 0,
+        unit: AngleUnit.Degrees
+    });
 
 canvas.add(new Circle(pointB, pointB.distanceTo(intersection)))
     .setOptions({ colour: '#ccf', zIndex: -1 });

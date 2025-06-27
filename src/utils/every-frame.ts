@@ -1,4 +1,4 @@
-import { NFSignal as Signal } from "./Signal";
+import { NFSignal as Signal } from "../Signal";
 
 // This is a helper function to run some code every time the browser redraws the document. It's mostly just boilerplate Javascript stuff.
 export default function everyFrame(): Signal<DOMHighResTimeStamp> {

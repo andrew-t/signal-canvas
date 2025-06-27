@@ -1,10 +1,12 @@
 import { NFSignal as Signal, SignalMappable } from "./Signal.js";
 import type Element from "./elements/Element.js";
+import { isOnScreen } from "./utils/scrolling.js";
 
 export interface SignalCanvasOptions {
     width: number;
     height: number;
     background?: string;
+    disabled: boolean;
 }
 
 export interface GlobalOptions {
@@ -24,11 +26,17 @@ export default class SignalCanvas extends HTMLElement {
     constructor() {
         super();
         this.appendChild(this.canvas);
-        this.setOptions({
+        const isOnScreen = this.isOnScreen();
+        this.setOptions(() => ({
             width: parseInt(this.getAttribute("width") ?? "100", 10),
             height: parseInt(this.getAttribute("height") ?? "100", 10),
-            background: this.getAttribute("background") ?? "white"
-        });
+            background: this.getAttribute("background") ?? "white",
+            disabled: !isOnScreen.getValue()
+        }));
+    }
+
+    isOnScreen(root?: HTMLElement | null) {
+        return isOnScreen(this, root);
     }
 
     setOptions(options: SignalMappable<SignalCanvasOptions>) {
@@ -60,13 +68,13 @@ export default class SignalCanvas extends HTMLElement {
         return element;
     }
 
-    private updateOptions(): void {
+    private updateOptions = () => {
         const options = this.getOptions();
         this.canvas.width = options.width;
         this.canvas.height = options.height;
         this.ctx = this.canvas.getContext('2d')!;
         this.debouncedDraw();
-    }
+    };
 
     draw(): void {
         this.drawRequested = false;
@@ -82,6 +90,7 @@ export default class SignalCanvas extends HTMLElement {
 
     debouncedDraw = (): void => {
         if (this.drawRequested) return;
+        if (this.getOptions().disabled) return;
         this.drawRequested = true;
         setTimeout(() => this.draw(), 0);
     };
