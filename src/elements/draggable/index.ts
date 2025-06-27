@@ -3,7 +3,7 @@ import Element from "../Element";
 import type { GlobalOptions } from "../../SignalCanvas";
 import { NFSignal as Signal } from "../../Signal";
 
-export default abstract class InteractiveElement<T, O extends GlobalOptions> extends Element<T, O>
+export default abstract class InteractiveElement<T = unknown, O extends GlobalOptions = GlobalOptions> extends Element<T, O>
 {
     /** The user can only interact with one element at a time. Is it this one? */
     public readonly active = new Signal(false);
@@ -16,4 +16,5 @@ export default abstract class InteractiveElement<T, O extends GlobalOptions> ext
     abstract hoverScore(coords: PointParams): number;
 
     abstract dragTo(coords: PointParams, from: PointParams): void;
+    abstract dragPos(): PointParams;
 }

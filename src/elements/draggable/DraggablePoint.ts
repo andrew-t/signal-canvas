@@ -68,4 +68,8 @@ export default class DraggablePoint<T> extends InteractiveElement<DraggablePoint
     dragTo(coords: PointParams): void {
         this.t.setValue(() => this.locus.getValue().toParametricSpace(coords));
     }
+
+    dragPos(): PointParams {
+        return this.locus.getValue().fromParametricSpace(this.t.getValue());
+    }
 }

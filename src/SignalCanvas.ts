@@ -30,9 +30,11 @@ export default class SignalCanvas extends HTMLElement {
 
     public currentDrag: {
         start: PointParams;
-        element: InteractiveElement<unknown, GlobalOptions>;
+        current: PointParams;
+        element: InteractiveElement;
     } | null = null;
-    public hoveredElement: InteractiveElement<unknown, GlobalOptions> | null = null;
+    public focusElement: InteractiveElement | null = null;
+    public hoveredElement: InteractiveElement | null = null;
 
     constructor() {
         super();
@@ -70,6 +72,84 @@ export default class SignalCanvas extends HTMLElement {
         }, { runNow: true });
         this.elements.subscribe(this.debouncedDraw);
         setTimeout(() => this.draw());
+
+        this.elements.subscribe(() => {
+            const elements = this.elements.getValue().filter(el => el instanceof InteractiveElement);
+            if (elements.length == 0) {
+                this.tabIndex = -1;
+                return;
+            }
+            this.tabIndex = 0;
+            this.focusElement = elements[0];
+            this.debouncedDraw();
+        });
+        
+        this.addEventListener("keydown", (e: KeyboardEvent) => {
+            const elements = this.elements.getValue().filter(el => el instanceof InteractiveElement);
+            switch (e.key) {
+                case "ArrowUp":
+                    if (this.currentDrag) {
+                        this.currentDrag.current = {
+                            x: this.currentDrag.current.x,
+                            y: this.currentDrag.current.y - 10
+                        };
+                        this.currentDrag.element.dragTo(this.currentDrag.current, this.currentDrag.start);
+                    }
+                    break;
+                case "ArrowDown":
+                    if (this.currentDrag) {
+                        this.currentDrag.current = {
+                            x: this.currentDrag.current.x,
+                            y: this.currentDrag.current.y + 10
+                        };
+                        this.currentDrag.element.dragTo(this.currentDrag.current, this.currentDrag.start);
+                    }
+                    break;
+                case "ArrowLeft":
+                    if (this.currentDrag) {
+                        this.currentDrag.current = {
+                            x: this.currentDrag.current.x - 10,
+                            y: this.currentDrag.current.y
+                        };
+                        this.currentDrag.element.dragTo(this.currentDrag.current, this.currentDrag.start);
+                    } else {
+                        const i = elements.indexOf(this.focusElement!);
+                        this.focusElement?.hover.setValue(false);
+                        this.focusElement = elements[(i + elements.length - 1) % elements.length];
+                        this.focusElement?.hover.setValue(true);
+                    }
+                    break;
+                case "ArrowRight":
+                    if (this.currentDrag) {
+                        this.currentDrag.current = {
+                            x: this.currentDrag.current.x + 10,
+                            y: this.currentDrag.current.y
+                        };
+                        this.currentDrag.element.dragTo(this.currentDrag.current, this.currentDrag.start);
+                    } else {
+                        const i = elements.indexOf(this.focusElement!);
+                        this.focusElement?.hover.setValue(false);
+                        this.focusElement = elements[(i + 1) % elements.length];
+                        this.focusElement?.hover.setValue(true);
+                    }
+                    break;
+                case " ":
+                    if (this.currentDrag) this.releaseDrag();
+                    else if (this.focusElement?.canBeDragged) this.startDrag();
+                    break;
+                default: console.log(e.key); return;
+            }
+            this.debouncedDraw();
+        });
+
+        this.addEventListener("focus", () => {
+            this.debouncedDraw();
+            this.focusElement?.hover.setValue(true);
+        });
+        this.addEventListener("blur", () => {
+            this.debouncedDraw();
+            this.focusElement?.hover.setValue(false);
+        });
     }
 
     updateSize = () => {
@@ -88,6 +168,7 @@ export default class SignalCanvas extends HTMLElement {
 
     add<T extends Element>(element: T): T {
         const current = this.elements.getValue();
+        if (current.includes(element)) return element;
         this.elements.setValue([...current, element]);
         element.subscribe(this.debouncedDraw);
         return element;
@@ -127,10 +208,11 @@ export default class SignalCanvas extends HTMLElement {
                 coords,
                 this.currentDrag.start
             );
+            this.currentDrag.current = coords;
             return;
         }
         let bestScore = 0;
-        let bestElement: InteractiveElement<unknown, GlobalOptions> | null = null;
+        let bestElement: InteractiveElement | null = null;
         for (const el of this.elements.getValue()) {
             if (!(el instanceof InteractiveElement)) continue;
             if (el.getOptions().disabled) continue;
@@ -151,13 +233,16 @@ export default class SignalCanvas extends HTMLElement {
         this.style.cursor = bestElement.canBeDragged ? "grab" : "pointer";
     };
 
-    startDrag = (e: MouseEvent) => {
-        if (!this.hoveredElement) return;
+    startDrag = (e?: MouseEvent) => {
+        const el = e ? this.hoveredElement : this.focusElement;
+        if (!el) return;
+        const coords = e ? this.mouseCoords(e) : this.focusElement!.dragPos();
         this.currentDrag = {
-            element: this.hoveredElement,
-            start: this.mouseCoords(e)
+            element: el,
+            start: coords,
+            current: coords
         };
-        this.currentDrag.element.active.setValue(true);
+        el.active.setValue(true);
         this.debouncedDraw();
     };
 
