@@ -1,5 +1,5 @@
 import { SignalMappable, NFSignal as Signal } from "../Signal.js";
-import Element, { ElementMappable, Source } from "./Element.js";
+import Element, { ElementMappable } from "./Element.js";
 import lineIntersection from "./line-intersection.js";
 import type { LineParams } from "./Line.js";
 import type SignalCanvas from "../SignalCanvas.js";
@@ -44,7 +44,7 @@ export default class Point extends Element<PointParams | null, PointOptions> {
         const options = this.getOptions();
         ctx.fillStyle = options.colour ?? "black";
         ctx.beginPath();
-        ctx.arc(params.x, params.y, options.radius ?? 5, 0, Math.PI * 2, true);
+        ctx.arc(params.x, params.y, options.radius ?? 4, 0, Math.PI * 2, true);
         ctx.fill();
     }
 

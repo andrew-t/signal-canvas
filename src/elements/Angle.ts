@@ -61,7 +61,7 @@ export default class Angle extends GroupBase<AngleParams, AngleOptions> {
             const htt = { x: to.x - hinge.x, y: to.y - hinge.y };
             const fromAngle = Math.atan2(htf.y, htf.x);
             const toAngle = Math.atan2(htt.y, htt.x);
-            return { from, hinge, to, fromAngle, toAngle };
+            return { from, hinge, to, htf, htt, fromAngle, toAngle };
         });
         
         this.circle = new Circle(() => {
@@ -82,12 +82,13 @@ export default class Angle extends GroupBase<AngleParams, AngleOptions> {
             const { name, unit, decimalPlaces, labelDistance, labelOffset } = this.getOptions();
             const angles = paramsWithAngles.getValue();
             if (!angles) return { text: "", location: hinge };
-            const labelAngle = (angles.fromAngle + angles.toAngle) * 0.5;
+            let theta = (angles.toAngle - angles.fromAngle);
+            if (theta < 0) theta += Math.PI * 2;
+            const labelAngle = angles.fromAngle + theta * 0.5;
             let value = "";
             if (givenValue) value = givenValue;
             else if (!value && unit != AngleUnit.Hidden) {
-                const theta = (angles.toAngle - angles.fromAngle) / getUnit(unit);
-                value = theta.toFixed(decimalPlaces) + getSuffix(unit);
+                value = (theta / getUnit(unit)).toFixed(decimalPlaces) + getSuffix(unit);
             }
             const labelRadius = labelDistance ?? 48;
             return {

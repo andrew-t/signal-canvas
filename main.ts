@@ -12,11 +12,13 @@ import type SignalCheckbox from "./src/controls/signal-checkbox.ts";
 import Label, { TextAlign } from "./src/elements/Label.ts";
 import Circle from "./src/elements/Circle.ts";
 import Angle, { AngleUnit } from "./src/elements/Angle.ts";
+import DraggablePoint from "./src/elements/draggable/DraggablePoint.ts";
+import Anywhere from "./src/elements/draggable/loci/anywhere.ts";
 
 // Start by defining some hard-coded elements
-const pointA = new Point({ x: 25, y: 25 })
+const pointA = new DraggablePoint({ x: 25, y: 25 }, Anywhere)
     // styling options are separate from geometric options and are applied like this:
-    .setOptions({ colour: 'blue', zIndex: 1 });
+    .setOptions({ zIndex: 1 });
 
 // Hook into our slider and use it to define an element
 const xSlider = document.getElementById("x-slider") as SignalSlider;
@@ -44,17 +46,17 @@ const pointB = new Point(() => {
             y: 225 - Math.cos(t * 0.0023) * 50
         };
     })
-    .setOptions({ colour: 'blue', zIndex: 1 });
+    .setOptions({ zIndex: 1 });
 
 // Next, define some elements derived from the above
 // Note that these functions wire up all the automatic updates for us — we just pass the "ingredients" in and everything is taken care of
-const lineAB = new Line(pointA, pointB);
+const lineAB = new Line(pointA.point, pointB);
 
 // The styling options can also be functions and these too will automatically update
 const intersection = Point.lineIntersection(lineAB, staticLine)
     .setOptions(() => {
         const i = intersection.getParams()!;
-        const a = pointA.getParams()!;
+        const a = pointA.point.getParams()!;
         const b = pointB.getParams()!;
         return {
             colour: i.x >= Math.min(a.x, b.x) && i.x <= Math.max(a.x, b.x) ? 'green' : 'red',
@@ -84,7 +86,7 @@ canvas.add(
 );
 
 // You can also call .setOptions on the return from .add if that's simpler
-canvas.add(new Angle(pointA, intersection, { x: 275, y: 25 }))
+canvas.add(new Angle(pointA.point, intersection, { x: 275, y: 25 }))
     .setOptions({
         line: { colour: '#06c' },
         zIndex: -1,

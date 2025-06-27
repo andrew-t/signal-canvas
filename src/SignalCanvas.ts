@@ -1,5 +1,7 @@
 import { NFSignal as Signal, SignalMappable } from "./Signal.js";
 import type Element from "./elements/Element.js";
+import type { PointParams } from "./elements/Point.js";
+import InteractiveElement from "./elements/draggable/index.js";
 import { isOnScreen } from "./utils/scrolling.js";
 
 export interface SignalCanvasOptions {
@@ -23,6 +25,13 @@ export default class SignalCanvas extends HTMLElement {
     public canvas = document.createElement("canvas") as HTMLCanvasElement;
     public ctx: CanvasRenderingContext2D;
 
+    public interactive = false;
+    public currentDrag: {
+        start: PointParams;
+        element: InteractiveElement<unknown, GlobalOptions>;
+    } | null = null;
+    public hoveredElement: InteractiveElement<unknown, GlobalOptions> | null = null;
+
     constructor() {
         super();
         this.appendChild(this.canvas);
@@ -33,6 +42,11 @@ export default class SignalCanvas extends HTMLElement {
             background: this.getAttribute("background") ?? "white",
             disabled: !isOnScreen.getValue()
         }));
+        this.canvas.addEventListener("mouseenter", this.updateHover);
+        this.canvas.addEventListener("mousemove", this.updateHover);
+        this.canvas.addEventListener("mousedown", this.startDrag);
+        this.canvas.addEventListener("mouseup", this.releaseDrag);
+        this.canvas.addEventListener("mouseleave", this.cancelHover);
     }
 
     isOnScreen(root?: HTMLElement | null) {
@@ -52,6 +66,7 @@ export default class SignalCanvas extends HTMLElement {
 
     add<T extends Element>(element: T): T {
         this.elements.push(element);
+        if (!this.interactive) this.interactive = element instanceof InteractiveElement;
         element.subscribe(this.debouncedDraw);
         this.debouncedDraw();
         return element;
@@ -64,6 +79,7 @@ export default class SignalCanvas extends HTMLElement {
             if (this.elements[i] != element) continue;
             this.elements.splice(i, 1);
         }
+        if (this.interactive) this.interactive = this.elements.some(el => el instanceof InteractiveElement);
         this.debouncedDraw();
         return element;
     }
@@ -93,6 +109,65 @@ export default class SignalCanvas extends HTMLElement {
         if (this.getOptions().disabled) return;
         this.drawRequested = true;
         setTimeout(() => this.draw(), 0);
+    };
+
+    mouseCoords(e: MouseEvent): PointParams {
+        return { x: e.offsetX, y: e.offsetY };
+    }
+
+    updateHover = (e: MouseEvent) => {
+        if (!this.interactive) return;
+        const coords = this.mouseCoords(e);
+        if (this.currentDrag) {
+            this.currentDrag.element.dragTo(
+                coords,
+                this.currentDrag.start
+            );
+            return;
+        }
+        let bestScore = 0;
+        let bestElement: InteractiveElement<unknown, GlobalOptions> | null = null;
+        for (const el of this.elements) {
+            if (!(el instanceof InteractiveElement)) continue;
+            if (el.getOptions().disabled) continue;
+            const score = el.hoverScore(coords);
+            if (score > bestScore) {
+                bestScore = score;
+                bestElement = el;
+            }
+        }
+        if (!bestElement) {
+            this.cancelHover();
+            return;
+        }
+        if (this.hoveredElement == bestElement) return;
+        bestElement.hover.setValue(true);
+        this.hoveredElement = bestElement;
+        this.debouncedDraw();
+        this.style.cursor = bestElement.canBeDragged ? "grab" : "pointer";
+    };
+
+    startDrag = (e: MouseEvent) => {
+        if (!this.hoveredElement) return;
+        this.currentDrag = {
+            element: this.hoveredElement,
+            start: this.mouseCoords(e)
+        };
+    };
+
+    releaseDrag = () => {
+        if (!this.currentDrag) return;
+        this.currentDrag.element.active.setValue(false);
+        this.currentDrag = null;
+    };
+
+    cancelHover = () => {
+        this.releaseDrag();
+        if (!this.hoveredElement) return;
+        this.hoveredElement.hover.setValue(false);
+        this.hoveredElement = null;
+        this.debouncedDraw();
+        this.style.cursor = "auto";
     };
 }
 
