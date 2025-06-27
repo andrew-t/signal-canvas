@@ -1,4 +1,4 @@
-import { InputOptions, SignalInputBoolean } from "./base.ts";
+import { InputOptions, SignalInputBoolean } from "./base";
 
 export interface CheckboxOptions extends InputOptions {
 };

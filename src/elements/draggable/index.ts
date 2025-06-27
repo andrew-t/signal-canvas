@@ -1,8 +1,7 @@
-import Point, { PointOptions, PointParams } from "../Point.js";
-import Element, { ElementMappable } from "../Element.js";
-import SignalCanvas, { GlobalOptions } from "../../SignalCanvas.js";
-import { DraggablePointLocus } from "./loci/types.js";
-import { NFSignal as Signal } from "../../Signal.js";
+import type { PointParams } from "../Point";
+import Element from "../Element";
+import type { GlobalOptions } from "../../SignalCanvas";
+import { NFSignal as Signal } from "../../Signal";
 
 export default abstract class InteractiveElement<T, O extends GlobalOptions> extends Element<T, O>
 {

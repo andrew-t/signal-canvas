@@ -1,7 +1,7 @@
 import { NFSignal as Signal, SignalMappable } from "../Signal";
-import Element, { ElementMappable } from "./Element.ts";
-import type SignalCanvas from "../SignalCanvas.js";
-import { GlobalOptions } from "../SignalCanvas.js";
+import Element, { ElementMappable } from "./Element";
+import type SignalCanvas from "../SignalCanvas";
+import { GlobalOptions } from "../SignalCanvas";
 
 // TODO: maybe this should allow tranforming the canvas? not sure, haven't worked out entirely what this is for yet
 

@@ -153,12 +153,15 @@ export default class SignalCanvas extends HTMLElement {
             element: this.hoveredElement,
             start: this.mouseCoords(e)
         };
+        this.currentDrag.element.active.setValue(true);
+        this.debouncedDraw();
     };
 
     releaseDrag = () => {
         if (!this.currentDrag) return;
         this.currentDrag.element.active.setValue(false);
         this.currentDrag = null;
+        this.debouncedDraw();
     };
 
     cancelHover = () => {

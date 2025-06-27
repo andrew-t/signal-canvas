@@ -1,19 +1,16 @@
 // If we don't import these files, none of our web components will work. (Just removing the "type" keyword from the individual imports doesn't work — I think because Vite thinks it can optimise them out anyway.)
-import "./src/controls/index.ts";
-import "./src/SignalCanvas.ts";
+import "./src/index";
 
 // Import the classes we need to make this work
-import Line from "./src/elements/Line.ts";
-import Point from "./src/elements/Point.ts";
-import timestamp from "./src/utils/every-frame.ts";
-import type SignalCanvas from "./src/SignalCanvas.ts";
-import type SignalSlider from "./src/controls/signal-slider.ts";
-import type SignalCheckbox from "./src/controls/signal-checkbox.ts";
-import Label, { TextAlign } from "./src/elements/Label.ts";
-import Circle from "./src/elements/Circle.ts";
-import Angle, { AngleUnit } from "./src/elements/Angle.ts";
-import DraggablePoint from "./src/elements/draggable/DraggablePoint.ts";
-import Anywhere from "./src/elements/draggable/loci/anywhere.ts";
+import {
+    Line, Point,
+    everyFrame,
+    SignalCanvas, SignalSlider, SignalCheckbox,
+    Label, TextAlign,
+    Circle,
+    Angle, AngleUnit,
+    DraggablePoint, Anywhere
+} from "./src/index";
 
 // Start by defining some hard-coded elements
 const pointA = new DraggablePoint({ x: 25, y: 25 }, Anywhere)
@@ -36,7 +33,7 @@ const staticLine = new Line(
     });
 
 // Now a time-dependent element:
-const currentTime = timestamp();
+const currentTime = everyFrame();
 const animateCheckbox = document.getElementById("animate-checkbox") as SignalCheckbox;
 const pointB = new Point(() => {
         // Because we only call currentTime.getValue() when it's needed, we won't redraw every frame unless we're animating

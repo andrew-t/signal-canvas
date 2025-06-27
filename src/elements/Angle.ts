@@ -6,16 +6,15 @@ import { GroupBase } from "./Group";
 import Label, { LabelOptions, TextAlign } from "./Label";
 import type { LineDrawingOptions } from "./Line";
 import type { PointParams } from "./Point";
-import Point from "./Point";
 
-interface AngleParams {
+export interface AngleParams {
     from: PointParams | null;
     hinge: PointParams | null;
     to: PointParams | null;
     value?: string | null; // will be worked out if not set
 }
 
-interface AngleOptions extends GlobalOptions {
+export interface AngleOptions extends GlobalOptions {
     unit?: AngleUnit;
     name?: string;
     showValue?: boolean;

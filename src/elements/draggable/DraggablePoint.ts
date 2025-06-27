@@ -42,10 +42,10 @@ export default class DraggablePoint<T> extends InteractiveElement<DraggablePoint
         })
         .setOptions(() => {
             const { point, activePoint, hoverPoint } = this.getOptions();
+            if(this.active.getValue())
+                return activePoint ?? hoverPoint ?? { colour: "#08f", radius: 10 };
             if (this.hover.getValue())
                 return hoverPoint ?? { colour: "red", radius: 8 };
-            if(this.active.getValue())
-                return activePoint ?? { colour: "#08f", radius: 10 };
             return point ?? { colour: "#00f", radius: 6 };
         });
 

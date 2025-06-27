@@ -6,6 +6,7 @@
   "author": "Andrew <fwf@andrewt.net>",
   "license": "MIT",
   "dependencies": {
-    "vite": "^6.3.5"
+    "vite": "^6.3.5",
+    "vite-plugin-dts": "^4.5.4"
   }
 }

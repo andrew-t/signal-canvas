@@ -1,4 +1,4 @@
-import { InputOptions, SignalInputString } from "./base.ts";
+import { InputOptions, SignalInputString } from "./base";
 
 export interface SliderOptions extends InputOptions {
     min: number;
