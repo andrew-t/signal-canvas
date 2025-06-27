@@ -1,14 +1,12 @@
-import { NFSignal as Signal, SignalMappable } from "./Signal.js";
+import { NFSignal as Signal } from "./Signal.js";
 import type Element from "./elements/Element.js";
 import type { PointParams } from "./elements/Point.js";
 import InteractiveElement from "./elements/draggable/index.js";
 import { isOnScreen } from "./utils/scrolling.js";
 
-export interface SignalCanvasOptions {
+export interface SignalCanvasDimensions {
     width: number;
     height: number;
-    background?: string;
-    disabled: boolean;
 }
 
 export interface GlobalOptions {
@@ -19,13 +17,17 @@ export interface GlobalOptions {
 
 export default class SignalCanvas extends HTMLElement {
     // Maybe this should be a set now??
-    private elements: Element[] = [];
+    private elements = new Signal<Element[]>([]);
     private drawRequested = false;
-    private options: Signal<SignalCanvasOptions>;
+
+    public readonly dimensions: Signal<SignalCanvasDimensions>;
+    public readonly background: Signal<string>;
+    public readonly disabled: Signal<boolean>;
+    public readonly pixelDensity: Signal<number>;
+
     public canvas = document.createElement("canvas") as HTMLCanvasElement;
     public ctx: CanvasRenderingContext2D;
 
-    public interactive = false;
     public currentDrag: {
         start: PointParams;
         element: InteractiveElement<unknown, GlobalOptions>;
@@ -35,69 +37,76 @@ export default class SignalCanvas extends HTMLElement {
     constructor() {
         super();
         this.appendChild(this.canvas);
+
+        this.pixelDensity = new Signal(() => this.attrOr("pixel-density", devicePixelRatio));
+
+        this.dimensions = new Signal(() => {
+            const pixelDensity = this.pixelDensity.getValue();
+            return {
+                width: this.attrOr("width", this.clientWidth * pixelDensity),
+                height: this.attrOr("height", this.clientWidth * pixelDensity)
+            };
+        });
+
+        this.background = new Signal(this.getAttribute("background") ?? "white");
+
         const isOnScreen = this.isOnScreen();
-        this.setOptions(() => ({
-            width: parseInt(this.getAttribute("width") ?? "100", 10),
-            height: parseInt(this.getAttribute("height") ?? "100", 10),
-            background: this.getAttribute("background") ?? "white",
-            disabled: !isOnScreen.getValue()
-        }));
+        this.disabled = new Signal(() => !isOnScreen.getValue());
+
         this.canvas.addEventListener("mouseenter", this.updateHover);
         this.canvas.addEventListener("mousemove", this.updateHover);
         this.canvas.addEventListener("mousedown", this.startDrag);
         this.canvas.addEventListener("mouseup", this.releaseDrag);
         this.canvas.addEventListener("mouseleave", this.cancelHover);
+
+        this.dimensions.subscribe(() => {
+            const { width, height } = this.dimensions.getValue();
+            this.canvas.width = width;
+            this.canvas.height = height;
+            this.ctx = this.canvas.getContext('2d')!;
+            const pixelDensity = this.pixelDensity.getValue();
+            this.ctx.scale(pixelDensity, pixelDensity);
+            this.debouncedDraw();
+        }, { runNow: true });
+        this.elements.subscribe(this.debouncedDraw);
+        setTimeout(() => this.draw());
     }
 
-    isOnScreen(root?: HTMLElement | null) {
-        return isOnScreen(this, root);
+    updateSize = () => {
+        this.dimensions.markDirty();
+        this.pixelDensity.markDirty();
     }
+    connectedCallback() { window.addEventListener("resize", this.updateSize); }
+    disconnectedCallback() { window.removeEventListener("resize", this.updateSize); }
+    isOnScreen(root?: HTMLElement | null) { return isOnScreen(this, root); }
+    mouseCoords(e: MouseEvent): PointParams { return { x: e.offsetX, y: e.offsetY }; }
 
-    setOptions(options: SignalMappable<SignalCanvasOptions>) {
-        this.options = Signal.from(options);
-        this.options.unsubscribe(this.updateOptions);
-        this.options.subscribe(this.updateOptions);
-        this.updateOptions();
-    }
-
-    getOptions(): SignalCanvasOptions {
-        return Signal.value(this.options);
+    attrOr(key: string, defaultValue: number): number {
+        if (this.hasAttribute(key)) return parseFloat(this.getAttribute(key)!);
+        return defaultValue;
     }
 
     add<T extends Element>(element: T): T {
-        this.elements.push(element);
-        if (!this.interactive) this.interactive = element instanceof InteractiveElement;
+        const current = this.elements.getValue();
+        this.elements.setValue([...current, element]);
         element.subscribe(this.debouncedDraw);
-        this.debouncedDraw();
         return element;
     }
 
     // this is called "delete" because HTML elements come with a function called "remove" that does something else
     delete<T extends Element>(element: T): T {
+        const current = this.elements.getValue();
+        this.elements.setValue(current.filter(e => e != element));
         element.unsubscribe(this.debouncedDraw);
-        for (let i = this.elements.length - 1; i >= 0; --i) {
-            if (this.elements[i] != element) continue;
-            this.elements.splice(i, 1);
-        }
-        if (this.interactive) this.interactive = this.elements.some(el => el instanceof InteractiveElement);
-        this.debouncedDraw();
         return element;
     }
 
-    private updateOptions = () => {
-        const options = this.getOptions();
-        this.canvas.width = options.width;
-        this.canvas.height = options.height;
-        this.ctx = this.canvas.getContext('2d')!;
-        this.debouncedDraw();
-    };
-
     draw(): void {
         this.drawRequested = false;
-        const options = this.getOptions();
-        this.ctx.fillStyle = options.background ?? "white";
-        this.ctx.fillRect(0, 0, 300, 300);
-        const elements = [ ...this.elements ]
+        this.ctx.fillStyle = this.background.getValue();
+        const dimensions = this.dimensions.getValue();
+        this.ctx.fillRect(0, 0, dimensions.width, dimensions.height);
+        const elements = [ ...this.elements.getValue() ]
             .filter(element => !element.getOptions().disabled)
             .sort((a, b) => (a.getOptions().zIndex ?? 0) - (b.getOptions().zIndex ?? 0));
         for (const element of elements)
@@ -106,17 +115,12 @@ export default class SignalCanvas extends HTMLElement {
 
     debouncedDraw = (): void => {
         if (this.drawRequested) return;
-        if (this.getOptions().disabled) return;
+        if (this.disabled.getValue()) return;
         this.drawRequested = true;
         setTimeout(() => this.draw(), 0);
     };
 
-    mouseCoords(e: MouseEvent): PointParams {
-        return { x: e.offsetX, y: e.offsetY };
-    }
-
     updateHover = (e: MouseEvent) => {
-        if (!this.interactive) return;
         const coords = this.mouseCoords(e);
         if (this.currentDrag) {
             this.currentDrag.element.dragTo(
@@ -127,7 +131,7 @@ export default class SignalCanvas extends HTMLElement {
         }
         let bestScore = 0;
         let bestElement: InteractiveElement<unknown, GlobalOptions> | null = null;
-        for (const el of this.elements) {
+        for (const el of this.elements.getValue()) {
             if (!(el instanceof InteractiveElement)) continue;
             if (el.getOptions().disabled) continue;
             const score = el.hoverScore(coords);

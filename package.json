@@ -1,12 +1,18 @@
 {
   "name": "signal-canvas",
-  "version": "1.0.0",
-  "main": "index.js",
+  "version": "0.0.1",
+  "main": "dist/signal-canvas.es.js",
   "repository": "git@github.com:andrew-t/signal-canvas.git",
-  "author": "Andrew <fwf@andrewt.net>",
+  "author": "Andrew <andrew@andrewt.net>",
   "license": "MIT",
   "dependencies": {
     "vite": "^6.3.5",
     "vite-plugin-dts": "^4.5.4"
-  }
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "prepack": "vite build"
+  },
+  "files": ["dist"]
 }

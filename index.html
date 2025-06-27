@@ -14,6 +14,8 @@
 
                 & canvas {
                     vertical-align: middle;
+                    width: 300px;
+                    height: 300px;
                 }
             }
         </style>
@@ -21,7 +23,7 @@
     <body>
         <signal-slider id="x-slider" label="Base of dashed line" min="25" max="275" value="25"></signal-slider>
         <signal-checkbox id="animate-checkbox" label="Animate" value="checked"></signal-checkbox>
-        <signal-canvas id="test-canvas" width="300" height="300" background="#eee"></signal-canvas>
+        <signal-canvas id="test-canvas" background="#eee"></signal-canvas>
         <script src="main.ts" type="module"></script>
     </body>
 </html>

@@ -1,6 +1,3 @@
-// If we don't import these files, none of our web components will work. (Just removing the "type" keyword from the individual imports doesn't work — I think because Vite thinks it can optimise them out anyway.)
-import "./src/index";
-
 // Import the classes we need to make this work
 import {
     Line, Point,
@@ -10,7 +7,7 @@ import {
     Circle,
     Angle, AngleUnit,
     DraggablePoint, Anywhere
-} from "./src/index";
+} from "./src";
 
 // Start by defining some hard-coded elements
 const pointA = new DraggablePoint({ x: 25, y: 25 }, Anywhere)
