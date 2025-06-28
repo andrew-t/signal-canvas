@@ -21,15 +21,14 @@ export interface DraggablePointOptions extends GlobalOptions {
 export default class DraggablePoint<T> extends InteractiveElement<DraggablePointParams<T>, DraggablePointOptions> {
     public readonly point: Point;
     
-    protected t: Signal<T>;
-    protected locus: Signal<DraggablePointLocus<T>>;
+    private t: Signal<T>;
+    private locus: Signal<DraggablePointLocus<T>>;
     
-    constructor(initialPosition: PointParams, locus: DraggablePointLocus<T>);
     constructor(
-        params: T,
+        initialPosition: T,
         locus: ElementMappable<DraggablePointLocus<T>>
     ) {
-        const t = new NFSignal(params);
+        const t = new NFSignal(initialPosition);
         const locusSignal = Element.paramsSignalFrom(locus);
         super(() => ({
             params: t.getValue(),
@@ -37,6 +36,8 @@ export default class DraggablePoint<T> extends InteractiveElement<DraggablePoint
         }), {});
         this.t = t;
         this.locus = locusSignal;
+
+        t.subscribe(() => console.log(t.getValue()))
 
         this.point = new Point(() => {
             const { params, locus } = this.getParams();
@@ -59,6 +60,7 @@ export default class DraggablePoint<T> extends InteractiveElement<DraggablePoint
     }
     tagName = "g";
     updateSvg(svg: SignalCanvasVector): void {
+        // TODO: add a larger, invisible click target
         this.point.drawSvg(svg, this.svgNode);
         setSvgAttr(this.svgNode, "tabindex", "0");
         setSvgStyles(this.svgNode, { cursor: this.active.getValue() ? "grabbing" : "grab" });
@@ -74,7 +76,9 @@ export default class DraggablePoint<T> extends InteractiveElement<DraggablePoint
     }
 
     dragTo(coords: PointParams): void {
-        this.t.setValue(() => this.locus.getValue().toParametricSpace(coords));
+        // We don't want t to depend on the locus, it should just get its new value and then stay there
+        const locus = this.locus.getValue();
+        this.t.setValue(() => locus.toParametricSpace(coords));
     }
 
     dragPos(): PointParams {

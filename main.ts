@@ -6,7 +6,8 @@ import {
     Label, TextAlign,
     Circle,
     Angle, AngleUnit,
-    DraggablePoint, Anywhere
+    DraggablePoint, Anywhere,
+    OnALine
 } from "./src";
 
 // Start by defining some hard-coded elements
@@ -28,6 +29,15 @@ const staticLine = new Line(
         extendPastA: true,
         extendPastB: true
     });
+
+const slp = new DraggablePoint(
+    0.1,
+    () => {
+        const { a, b } = staticLine.getParams()!;
+        return OnALine(a!, b!);
+    })
+    // styling options are separate from geometric options and are applied like this:
+    .setOptions({ zIndex: 5 });
 
 // Now a time-dependent element:
 const currentTime = everyFrame();
@@ -68,6 +78,7 @@ canvas.add(pointB);
 canvas.add(lineAB);
 canvas.add(staticLine);
 canvas.add(intersection);
+canvas.add(slp);
 
 // Add and create it in one step if you won't need to refer to the element again
 canvas.add(
