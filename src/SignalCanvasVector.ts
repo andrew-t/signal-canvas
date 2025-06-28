@@ -58,9 +58,48 @@ export default class SignalCanvasVector extends SignalCanvas {
         });
 
         this.addEventListener("mousemove", e => {
-            if (!this.currentDrag) return;
+            if (!this.currentDrag) {
+                this.style.cursor = "unset";
+                return;
+            }
             this.currentDrag.current = this.mouseCoords(e);
             this.currentDrag.element.dragTo(this.currentDrag.current, this.currentDrag.start);
+        });
+
+        this.addEventListener("keydown", e => {
+            if (this.currentDrag) {
+                switch (e.key) {
+                    case " ":
+                        this.releaseDrag();
+                        break;
+                    case "ArrowUp":
+                        this.currentDrag.current = { x: this.currentDrag.current.x, y: this.currentDrag.current.y - 10 };
+                        this.currentDrag.element.dragTo(this.currentDrag.current, this.currentDrag.start);
+                        break;
+                    case "ArrowDown":
+                        this.currentDrag.current = { x: this.currentDrag.current.x, y: this.currentDrag.current.y + 10 };
+                        this.currentDrag.element.dragTo(this.currentDrag.current, this.currentDrag.start);
+                        break;
+                    case "ArrowLeft":
+                        this.currentDrag.current = { x: this.currentDrag.current.x - 10, y: this.currentDrag.current.y };
+                        this.currentDrag.element.dragTo(this.currentDrag.current, this.currentDrag.start);
+                        break;
+                    case "ArrowRight":
+                        this.currentDrag.current = { x: this.currentDrag.current.x + 10, y: this.currentDrag.current.y };
+                        this.currentDrag.element.dragTo(this.currentDrag.current, this.currentDrag.start);
+                        break;
+                    default: return;
+                }
+                e.preventDefault();
+                this.debouncedDraw();
+                return;
+            }
+            const target = this.getTarget(e);
+            if (!target) return;
+            if (e.key == " " && target.canBeDragged) {
+                this.startDrag(target);
+                e.preventDefault();
+            }
         });
     }
 
@@ -72,7 +111,7 @@ export default class SignalCanvasVector extends SignalCanvas {
             el.drawSvg(this, this.svg);
     }
 
-    getTarget(e: MouseEvent): InteractiveElement | null {
+    getTarget(e: Event): InteractiveElement | null {
         let el = e.target as Element;
         while (el.parentNode != this.svg) {
             if (el == this) return null;

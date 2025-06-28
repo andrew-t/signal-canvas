@@ -78,7 +78,7 @@ export enum TextAlign {
 // TODO: make this work properly in RTL languages
 const TextAlignSvg = {
     "left": "start",
-    "centre": "middle",
+    "center": "middle",
     "right": "end",
     "start": "start",
     "end": "end"

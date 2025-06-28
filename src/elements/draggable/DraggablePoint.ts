@@ -61,9 +61,7 @@ export default class DraggablePoint<T> extends InteractiveElement<DraggablePoint
     updateSvg(svg: SignalCanvasVector): void {
         this.point.drawSvg(svg, this.svgNode);
         setSvgAttr(this.svgNode, "tabindex", "0");
-        setSvgStyles(this.svgNode, {
-            cursor: "grab"
-        });
+        setSvgStyles(this.svgNode, { cursor: this.active.getValue() ? "grabbing" : "grab" });
     }
 
     hoverScore(coords: PointParams): number {

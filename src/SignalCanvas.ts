@@ -105,6 +105,7 @@ export default abstract class SignalCanvas extends HTMLElement {
             current: coords
         };
         el.active.setValue(true);
+        this.style.cursor = "grabbing";
         this.debouncedDraw();
     };
 
@@ -112,6 +113,7 @@ export default abstract class SignalCanvas extends HTMLElement {
         if (!this.currentDrag) return;
         this.currentDrag.element.active.setValue(false);
         this.currentDrag = null;
+        this.style.cursor = "grab";
         this.debouncedDraw();
     };
 }
