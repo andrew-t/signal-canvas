@@ -22,15 +22,13 @@ export default class SignalCanvasVector extends SignalCanvas {
             setSvgAttr(this.bg, "height", `${dim.height}`);
         }, { runNow: true });
 
-        this.background.subscribe(() =>
-            setSvgStyles(this.bg, ({
-                fill: this.background.getValue()
-            })),
+        this.background.subscribe(
+            () => setSvgStyles(this.bg, ({ fill: this.background.getValue() })),
             { runNow: true }
         );
 
         this.addEventListener("mouseover", e => {
-            const target = this.getTarget(e);
+            const target = this.getTarget(e.target as Element);
             if (!target) return;
             this.hoveredElement = target;
             target.hover.setValue(true);
@@ -38,23 +36,56 @@ export default class SignalCanvasVector extends SignalCanvas {
         });
 
         this.addEventListener("mouseout", e => {
-            const target = this.getTarget(e);
+            const target = this.getTarget(e.target as Element);
             if (!target) return;
             if (this.hoveredElement == target) this.hoveredElement = null;
             target.hover.setValue(false);
             this.debouncedDraw();
         });
 
-        this.addEventListener("mouseleave", e => {
-            this.releaseDrag();
-        });
-
+        this.addEventListener("mouseleave", this.releaseDrag);
         this.addEventListener("mouseup", this.releaseDrag);
 
+        // TODO: add touch-gesture handlers for mobile
         this.addEventListener("mousedown", e => {
-            const target = this.getTarget(e);
+            const target = this.getTarget(e.target as Element);
             if (!target) return;
             if (target.canBeDragged) this.startDrag(target, e);
+        });
+
+        this.addEventListener("touchstart", (e) => {
+            if (this.currentDrag) return;
+            for (const touch of e.changedTouches) {
+                const target = this.getTarget(touch.target as Element);
+                if (!target) continue;
+                if (target.canBeDragged) {
+                    this.startDrag(target, null, touch);
+                    e.preventDefault();
+                    return;
+                }
+            }
+        });
+
+        function endTouch(e: TouchEvent) {
+            if (!this.currentDrag) return;
+            for (const touch of e.changedTouches)
+                if (touch.identifier == this.currentDrag!.touchId) {
+                    this.releaseDrag();
+                    e.preventDefault();
+                    return;
+                }
+        }
+        this.addEventListener("touchend", endTouch);
+        this.addEventListener("touchcancel", endTouch);
+
+        this.addEventListener("touchmove", e => {
+            if (!this.currentDrag) return;
+            for (const touch of e.changedTouches)
+                if (touch.identifier == this.currentDrag!.touchId) {
+                    this.currentDrag!.element.dragTo(this.touchCoords(touch), this.currentDrag!.start);
+                    e.preventDefault();
+                    return;
+                }
         });
 
         this.addEventListener("mousemove", e => {
@@ -94,7 +125,7 @@ export default class SignalCanvasVector extends SignalCanvas {
                 this.debouncedDraw();
                 return;
             }
-            const target = this.getTarget(e);
+            const target = this.getTarget(e.target as Element);
             if (!target) return;
             if (e.key == " " && target.canBeDragged) {
                 this.startDrag(target);
@@ -111,8 +142,7 @@ export default class SignalCanvasVector extends SignalCanvas {
             el.drawSvg(this, this.svg);
     }
 
-    getTarget(e: Event): InteractiveElement | null {
-        let el = e.target as Element;
+    getTarget(el: Element): InteractiveElement | null {
         while (el.parentNode != this.svg) {
             if (el == this) return null;
             el = el.parentNode as Element;

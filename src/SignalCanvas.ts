@@ -37,6 +37,7 @@ export default abstract class SignalCanvas extends HTMLElement {
         start: PointParams;
         current: PointParams;
         element: InteractiveElement;
+        touchId?: number;
     } | null = null;
 
     constructor() {
@@ -63,6 +64,10 @@ export default abstract class SignalCanvas extends HTMLElement {
 
     isOnScreen(root?: HTMLElement | null) { return isOnScreen(this, root); }
     mouseCoords(e: MouseEvent): PointParams { return { x: e.offsetX, y: e.offsetY }; }
+    touchCoords(e: Touch): PointParams {
+        const a = this.getBoundingClientRect();
+        return { x: e.clientX - a.left, y: e.clientY - a.top };
+    }
 
     protected attrOr(key: string, defaultValue: number): number {
         if (this.hasAttribute(key)) return parseFloat(this.getAttribute(key)!);
@@ -97,12 +102,13 @@ export default abstract class SignalCanvas extends HTMLElement {
         setTimeout(() => this.draw(), 0);
     };
 
-    startDrag(el: InteractiveElement, e?: MouseEvent) {
-        const coords = e ? this.mouseCoords(e) : el.dragPos();
+    startDrag(el: InteractiveElement, e?: MouseEvent | null, touch?: Touch) {
+        const coords = e ? this.mouseCoords(e) : touch ? this.touchCoords(touch) : el.dragPos();
         this.currentDrag = {
             element: el,
             start: coords,
-            current: coords
+            current: coords,
+            touchId: touch?.identifier
         };
         el.active.setValue(true);
         this.style.cursor = "grabbing";
