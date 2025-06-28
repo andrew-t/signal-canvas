@@ -1,9 +1,11 @@
 import { Getter, NFSignal as Signal, SignalSubscriber } from "../Signal.js";
-import type SignalCanvas from "../SignalCanvas.js";
 import { GlobalOptions } from "../SignalCanvas.js";
+import type SignalCanvasRaster from "../SignalCanvasRaster.js";
+import type SignalCanvasVector from "../SignalCanvasVector.js";
 
 export type Source<T> = T | Getter<T>;
 export type ElementMappable<T> = Signal<T> | Element<T> | Source<T>;
+export const SvgNS = "http://www.w3.org/2000/svg";
 
 export default abstract class Element<T = any, O extends GlobalOptions = GlobalOptions> {
     private params: Signal<T>;
@@ -32,7 +34,30 @@ export default abstract class Element<T = any, O extends GlobalOptions = GlobalO
         return this;
     }
 
-    abstract draw(canvas: SignalCanvas): void;
+    abstract draw(canvas: SignalCanvasRaster): void;
+
+    svgNode: SVGElement;
+    abstract tagName: string;
+    private createTag(tag: string, parent: SVGElement) {
+        this.svgNode = document.createElementNS(SvgNS, tag) as SVGElement;
+        if (parent) parent.appendChild(this.svgNode);
+        const { zIndex } = this.getOptions();
+        setSvgStyles(this.svgNode, {
+            "z-index": zIndex?.toString() ?? "0"
+        });
+    }
+    drawSvg(svg: SignalCanvasVector, parent: SVGElement) {
+        if (!this.svgNode) this.createTag(this.tagName, parent);
+        this.updateSvg(svg);
+    }
+    setSvgTag(tag: string) {
+        if (this.svgNode.tagName != tag) {
+            const parent = this.svgNode.parentNode as SVGElement;
+            parent.removeChild(this.svgNode);
+            this.createTag(tag, parent);
+        }
+    }
+    abstract updateSvg(svg: SignalCanvasVector): void;
 
     static value<T>(object: ElementMappable<T>) {
         if (object instanceof Element) return object.getParams();
@@ -69,4 +94,12 @@ export default abstract class Element<T = any, O extends GlobalOptions = GlobalO
         this.params.unsubscribe(callback);
         this.options.unsubscribe(callback);
     }
+}
+
+export function setSvgAttr(el: SVGElement, key: string, value: string) {
+    el.setAttribute(key, value);
+}
+
+export function setSvgStyles(el: SVGElement, styles: Record<string, string>) {
+    el.setAttribute("style", Object.entries(styles).map(([k, v]) => `${k}: ${v}`).join("; "));
 }

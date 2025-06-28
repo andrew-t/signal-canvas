@@ -1,9 +1,9 @@
-import { SignalMappable, NFSignal as Signal } from "../Signal.js";
-import Element, { ElementMappable } from "./Element.js";
-import lineIntersection from "./line-intersection.js";
-import type { LineParams } from "./Line.js";
-import type SignalCanvas from "../SignalCanvas.js";
-import { GlobalOptions } from "../SignalCanvas.js";
+import { SignalMappable, NFSignal as Signal } from "../Signal";
+import Element, { ElementMappable, setSvgAttr, setSvgStyles } from "./Element";
+import lineIntersection from "./line-intersection";
+import type { LineParams } from "./Line";
+import { GlobalOptions } from "../SignalCanvas";
+import type SignalCanvasRaster from "../SignalCanvasRaster";
 
 export interface PointParams {
     x: number;
@@ -38,7 +38,7 @@ export default class Point extends Element<PointParams | null, PointOptions> {
             );
     }
 
-    draw({ ctx }: SignalCanvas): void {
+    draw({ ctx }: SignalCanvasRaster): void {
         const params = this.getParams();
         if (!params) return;
         const options = this.getOptions();
@@ -46,6 +46,19 @@ export default class Point extends Element<PointParams | null, PointOptions> {
         ctx.beginPath();
         ctx.arc(params.x, params.y, options.radius ?? 4, 0, Math.PI * 2, true);
         ctx.fill();
+    }
+
+    tagName = "circle";
+    updateSvg() {
+        const params = this.getParams();
+        const { radius, disabled, colour, zIndex } = this.getOptions();
+        setSvgAttr(this.svgNode, "cx", (params?.x ?? 0).toString());
+        setSvgAttr(this.svgNode, "cy", (params?.y ?? 0).toString());
+        setSvgAttr(this.svgNode, "r", ((params && !disabled) ? radius ?? 4 : -1).toString());
+        setSvgStyles(this.svgNode, {
+            "fill": colour ?? "black",
+            "z-index": zIndex?.toString() ?? "0"
+        });
     }
 
     add(diff: ElementMappable<PointParams | null>) {
@@ -75,4 +88,15 @@ export default class Point extends Element<PointParams | null, PointOptions> {
             Element.value(line2)
         ));
     }
+}
+
+export function cosSin(theta: number, r = 1, centre: PointParams = { x: 0, y: 0 }): PointParams {
+    return {
+        x: Math.cos(theta) * r + centre.x,
+        y: Math.sin(theta) * r + centre.y
+    }
+}
+
+export function atan(p: PointParams) {
+    return Math.atan2(p.y, p.x);
 }

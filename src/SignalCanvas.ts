@@ -31,6 +31,14 @@ export default abstract class SignalCanvas extends HTMLElement {
     /** If true, do not update anything on the canvas */
     public readonly disabled: Signal<boolean>;
 
+    public hoveredElement: InteractiveElement | null = null;
+
+    public currentDrag: {
+        start: PointParams;
+        current: PointParams;
+        element: InteractiveElement;
+    } | null = null;
+
     constructor() {
         super();
 
@@ -87,6 +95,24 @@ export default abstract class SignalCanvas extends HTMLElement {
         if (this.disabled.getValue()) return;
         this.drawRequested = true;
         setTimeout(() => this.draw(), 0);
+    };
+
+    startDrag(el: InteractiveElement, e?: MouseEvent) {
+        const coords = e ? this.mouseCoords(e) : el.dragPos();
+        this.currentDrag = {
+            element: el,
+            start: coords,
+            current: coords
+        };
+        el.active.setValue(true);
+        this.debouncedDraw();
+    };
+
+    releaseDrag = () => {
+        if (!this.currentDrag) return;
+        this.currentDrag.element.active.setValue(false);
+        this.currentDrag = null;
+        this.debouncedDraw();
     };
 }
 

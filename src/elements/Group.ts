@@ -1,7 +1,8 @@
-import { NFSignal as Signal, SignalMappable } from "../Signal";
+import { NFSignal as Signal } from "../Signal";
 import Element, { ElementMappable } from "./Element";
-import type SignalCanvas from "../SignalCanvas";
 import { GlobalOptions } from "../SignalCanvas";
+import type SignalCanvasRaster from "../SignalCanvasRaster";
+import type SignalCanvasVector from "../SignalCanvasVector";
 
 // TODO: maybe this should allow tranforming the canvas? not sure, haven't worked out entirely what this is for yet
 
@@ -21,14 +22,23 @@ export abstract class GroupBase<T, O extends GlobalOptions> extends Element<T, O
         this.elements = Element.paramsSignalFrom(elements);
     }
 
-    draw(canvas: SignalCanvas): void {
-        const elements = this.elements.getValue()
+    members() {
+        return this.elements.getValue()
             .filter((element) => !element.getOptions()?.disabled)
             .sort((a, b) =>
                 (a.getOptions()?.zIndex ?? 0) -
                 (b.getOptions()?.zIndex ?? 0));
-        for (const element of elements)
+    }
+
+    draw(canvas: SignalCanvasRaster): void {
+        for (const element of this.members())
             element.draw(canvas);
+    }
+
+    tagName = "g";
+    updateSvg(svg: SignalCanvasVector): void {
+        for (const element of this.members())
+            element.drawSvg(svg, this.svgNode);
     }
 }
 

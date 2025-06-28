@@ -1,8 +1,8 @@
 import Line, { LineDrawingOptions } from "./Line";
-import type { PointParams } from "./Point";
-import Element, { ElementMappable } from "./Element.js";
-import { NFSignal as Signal, SignalMappable } from "../Signal.js";
-import type SignalCanvas from "../SignalCanvas.js";
+import { cosSin, type PointParams } from "./Point";
+import Element, { ElementMappable, setSvgAttr, setSvgStyles } from "./Element";
+import { NFSignal as Signal, SignalMappable } from "../Signal";
+import type SignalCanvasRaster from "../SignalCanvasRaster";
 
 export interface CircleParams {
     centre: PointParams | null;
@@ -38,7 +38,7 @@ export default class Circle extends Element<CircleParams, LineDrawingOptions> {
 
     // TODO: support making a circle from three points
 
-    draw({ ctx }: SignalCanvas): void {
+    draw({ ctx }: SignalCanvasRaster): void {
         const params = this.getParams();
         const options = this.getOptions();
         if (!params.centre || !params.radius) return;
@@ -53,5 +53,41 @@ export default class Circle extends Element<CircleParams, LineDrawingOptions> {
             !!params.counterClockwise
         );
         ctx.stroke();
+    }
+
+    tagName = "circle";
+    updateSvg() {
+        const {
+            centre, radius,
+            startAngle, endAngle,
+            counterClockwise = false
+        } = this.getParams();
+        const { disabled, ...options } = this.getOptions();
+        if (disabled || !radius || !centre) {
+            setSvgAttr(this.svgNode, "d", "M 0 0");
+            return;
+        }
+        if ((typeof startAngle == "number") && (typeof endAngle == "number")) {
+            this.setSvgTag("path")
+            let start = cosSin(startAngle!, radius!, centre);
+            let end = cosSin(endAngle!, radius!, centre);
+            if (counterClockwise) [start, end] = [end, start];
+            const theta = (endAngle - startAngle + Math.PI * 4) % (Math.PI * 2);
+            const useLongArc = theta >= Math.PI;
+            setSvgAttr(this.svgNode, "d",
+                `M ${start.x} ${start.y}
+                A ${radius} ${radius} 0
+                ${+useLongArc} 1
+                ${end.x} ${end.y}`);
+        } else {
+            this.setSvgTag("circle");
+            setSvgAttr(this.svgNode, "cx", centre.x.toString());
+            setSvgAttr(this.svgNode, "cy", centre.y.toString());
+            setSvgAttr(this.svgNode, "r", radius.toString());
+        }
+        setSvgStyles(this.svgNode, {
+            ...Line.svgStyles(options),
+            fill: "none"
+        });
     }
 }

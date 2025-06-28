@@ -13,13 +13,6 @@ export default class SignalCanvasRaster extends SignalCanvas {
 
     // We need to fake hover and focus if we're just doing pixels on a canvas
     public focusElement: InteractiveElement | null = null;
-    public hoveredElement: InteractiveElement | null = null;
-
-    public currentDrag: {
-        start: PointParams;
-        current: PointParams;
-        element: InteractiveElement;
-    } | null = null;
 
     constructor() {
         super();
@@ -190,24 +183,6 @@ export default class SignalCanvasRaster extends SignalCanvas {
         this.hoveredElement = null;
         this.debouncedDraw();
         this.style.cursor = "auto";
-    };
-
-    startDrag(el: InteractiveElement, e?: MouseEvent) {
-        const coords = e ? this.mouseCoords(e) : el.dragPos();
-        this.currentDrag = {
-            element: el,
-            start: coords,
-            current: coords
-        };
-        el.active.setValue(true);
-        this.debouncedDraw();
-    };
-
-    releaseDrag = () => {
-        if (!this.currentDrag) return;
-        this.currentDrag.element.active.setValue(false);
-        this.currentDrag = null;
-        this.debouncedDraw();
     };
 }
 

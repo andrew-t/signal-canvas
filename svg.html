@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <style>
+            label {
+                display: block;
+            }
+
+            signal-svg {
+                border: 2px solid blue;
+                border-radius: 8px;
+                display: inline-block;
+                overflow: hidden;
+
+                & svg {
+                    display: block;
+                    width: 300px;
+                    height: 300px;
+                }
+
+                &:focus {
+                    border-color: #08f;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <signal-slider id="x-slider" label="Base of dashed line" min="25" max="275" value="25"></signal-slider>
+        <signal-checkbox id="animate-checkbox" label="Animate" value="checked"></signal-checkbox>
+        <signal-svg id="test-canvas" background="#eee" width="300" height="300"></signal-svg>
+        <script src="main.ts" type="module"></script>
+    </body>
+</html>

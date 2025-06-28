@@ -1,7 +1,8 @@
-import Element, { ElementMappable } from "./Element.js";
-import type { PointParams } from "./Point.js";
-import type SignalCanvas from "../SignalCanvas.js";
-import type { GlobalOptions } from "../SignalCanvas.js";
+import Element, { ElementMappable, setSvgAttr, setSvgStyles } from "./Element";
+import type { PointParams } from "./Point";
+import type SignalCanvasRaster from "../SignalCanvasRaster";
+import type SignalCanvasVector from "../SignalCanvasVector";
+import type { GlobalOptions, SignalCanvasDimensions } from "../SignalCanvas";
 
 export interface LineParams {
     a: PointParams | null,
@@ -47,41 +48,72 @@ export default class Line extends Element<LineParams | null, LineOptions> {
         ctx.setLineDash(options.dashes ?? []);
     }
     
-    draw({ canvas, ctx }: SignalCanvas): void {
+    private trueEnds(dim: SignalCanvasDimensions) {
         const params = this.getParams();
         const options = this.getOptions();
-        if (!params?.a || !params?.b) return;
-        if (params.a.x == params.b.x && params.a.y == params.b.y) return;
-        Line.applyLineOptions(ctx, options);
-        ctx.beginPath();
+        if (!params?.a || !params?.b) return null;
+        if (params.a.x == params.b.x && params.a.y == params.b.y) return null;
         let start = params.a;
         let end = params.b;
         if (options.extendPastA || options.extendPastB) {
             const diff = normalisedDiff(start, end);
-            const sizeFactor = canvas.width + canvas.height;
+            const sizeFactor = dim.width + dim.height;
             if (options.extendPastA) {
-                const t = tParam(canvas, diff, start);
+                const t = tParam(dim, diff, start);
                 if (t > -sizeFactor) {
                     const extra = t + sizeFactor;
                     start = { x: start.x - diff.x * extra, y: start.y - diff.y * extra };
                 }
             }
             if (options.extendPastB) {
-                const t = tParam(canvas, diff, end);
+                const t = tParam(dim, diff, end);
                 if (t < sizeFactor) {
                     const extra = sizeFactor - t;
                     end = { x: end.x + diff.x * extra, y: end.y + diff.y * extra };
                 }
             }
         }
-        ctx.moveTo(start.x, start.y);
-        ctx.lineTo(end.x, end.y);
+        return { start, end };
+    }
+
+    draw({ ctx, dimensions }: SignalCanvasRaster): void {
+        const dim = dimensions.getValue();
+        const ends = this.trueEnds(dim);
+        if (!ends) return;
+        const options = this.getOptions();
+        Line.applyLineOptions(ctx, options);
+        ctx.beginPath();
+        ctx.moveTo(ends.start.x, ends.start.y);
+        ctx.lineTo(ends.end.x, ends.end.y);
         ctx.stroke();
+    }
+    
+    tagName = "path";
+    updateSvg({ dimensions }: SignalCanvasVector): void {
+        const dim = dimensions.getValue();
+        const ends = this.trueEnds(dim);
+        if (!ends) return;
+        setSvgAttr(this.svgNode, "d",
+            `M ${ends.start.x} ${ends.start.y}
+             L ${ends.end.x} ${ends.end.y}`
+        );
+        setSvgStyles(this.svgNode, Line.svgStyles(this.getOptions()));
+    }
+    static svgStyles({ width, colour, dashes }: LineDrawingOptions) {
+        return {
+            "stroke": colour ?? "black",
+            "stroke-width": `${width ?? 1}px`,
+            "stroke-dasharray": dashes?.map(d => `${d}px`).join(" ") ?? ""
+        };
     }
 }
 
-function tParam(canvas: HTMLCanvasElement, direction: PointParams, point: PointParams) {
-    const centreToPoint = { x: point.x - canvas.width / 2, y: point.y - canvas.height / 2 };
+function tParam(
+    { width, height }: SignalCanvasDimensions,
+    direction: PointParams,
+    point: PointParams
+) {
+    const centreToPoint = { x: point.x - width / 2, y: point.y - height / 2 };
     return centreToPoint.x * direction.x + centreToPoint.y * direction.y;
 }
 

@@ -1,9 +1,11 @@
 import Point, { PointOptions, PointParams } from "../Point.js";
-import Element, { ElementMappable } from "../Element.js";
-import SignalCanvas, { GlobalOptions } from "../../SignalCanvas.js";
+import Element, { ElementMappable, setSvgAttr, setSvgStyles } from "../Element.js";
+import { GlobalOptions } from "../../SignalCanvas.js";
 import { DraggablePointLocus } from "./loci/types.js";
 import InteractiveElement from "./index.js";
 import Signal, { NFSignal } from "../../Signal.js";
+import type SignalCanvasRaster from "../../SignalCanvasRaster.js";
+import type SignalCanvasVector from "../../SignalCanvasVector.js";
 
 export interface DraggablePointParams<T> {
     params: T;
@@ -52,8 +54,16 @@ export default class DraggablePoint<T> extends InteractiveElement<DraggablePoint
         this.canBeDragged = true;
     }
 
-    draw(canvas: SignalCanvas): void {
+    draw(canvas: SignalCanvasRaster): void {
         this.point.draw(canvas);
+    }
+    tagName = "g";
+    updateSvg(svg: SignalCanvasVector): void {
+        this.point.drawSvg(svg, this.svgNode);
+        setSvgAttr(this.svgNode, "tabindex", "0");
+        setSvgStyles(this.svgNode, {
+            cursor: "grab"
+        });
     }
 
     hoverScore(coords: PointParams): number {

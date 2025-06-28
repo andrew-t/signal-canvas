@@ -12,7 +12,7 @@ import {
 // Start by defining some hard-coded elements
 const pointA = new DraggablePoint({ x: 25, y: 25 }, Anywhere)
     // styling options are separate from geometric options and are applied like this:
-    .setOptions({ zIndex: 1 });
+    .setOptions({ zIndex: 5 });
 
 // Hook into our slider and use it to define an element
 const xSlider = document.getElementById("x-slider") as SignalSlider;
@@ -49,9 +49,10 @@ const lineAB = new Line(pointA.point, pointB);
 // The styling options can also be functions and these too will automatically update
 const intersection = Point.lineIntersection(lineAB, staticLine)
     .setOptions(() => {
-        const i = intersection.getParams()!;
-        const a = pointA.point.getParams()!;
-        const b = pointB.getParams()!;
+        const i = intersection.getParams();
+        const a = pointA.point.getParams();
+        const b = pointB.getParams();
+        if (!i || !a || !b) return {};
         return {
             colour: i.x >= Math.min(a.x, b.x) && i.x <= Math.max(a.x, b.x) ? 'green' : 'red',
             zIndex: 1
@@ -83,7 +84,7 @@ canvas.add(
 canvas.add(new Angle(pointA.point, intersection, { x: 275, y: 25 }))
     .setOptions({
         line: { colour: '#06c' },
-        zIndex: -1,
+        zIndex: 0.5,
         showValue: true,
         name: "θ",
         decimalPlaces: 0,
