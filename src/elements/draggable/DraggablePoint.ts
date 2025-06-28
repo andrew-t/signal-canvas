@@ -37,8 +37,6 @@ export default class DraggablePoint<T> extends InteractiveElement<DraggablePoint
         this.t = t;
         this.locus = locusSignal;
 
-        t.subscribe(() => console.log(t.getValue()))
-
         this.point = new Point(() => {
             const { params, locus } = this.getParams();
             return locus.fromParametricSpace(params);
