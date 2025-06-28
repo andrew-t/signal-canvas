@@ -1,7 +1,7 @@
 import { NFSignal as Signal } from "./Signal";
 import type Element from "./elements/Element";
 import type { PointParams } from "./elements/Point";
-import InteractiveElement from "./elements/draggable";
+import InteractiveElement from "./elements/draggable/index";
 import { isOnScreen } from "./utils/scrolling";
 
 export interface SignalCanvasDimensions {

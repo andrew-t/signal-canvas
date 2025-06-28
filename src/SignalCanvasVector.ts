@@ -1,8 +1,6 @@
-import { NFSignal as Signal } from "./Signal.js";
-import SignalCanvas, { SignalCanvasDimensions } from "./SignalCanvas";
+import SignalCanvas from "./SignalCanvas";
 import { setSvgAttr, setSvgStyles, SvgNS } from "./elements/Element.js";
-import type { PointParams } from "./elements/Point.js";
-import InteractiveElement from "./elements/draggable";
+import InteractiveElement from "./elements/draggable/index";
 
 export default class SignalCanvasVector extends SignalCanvas {
     svg = document.createElementNS(SvgNS, "svg") as SVGElement;

@@ -1,7 +1,6 @@
 import { NFSignal as Signal } from "./Signal.js";
 import SignalCanvas, { SignalCanvasDimensions } from "./SignalCanvas";
-import type { PointParams } from "./elements/Point.js";
-import InteractiveElement from "./elements/draggable";
+import InteractiveElement from "./elements/draggable/index";
 
 export default class SignalCanvasRaster extends SignalCanvas {
     
