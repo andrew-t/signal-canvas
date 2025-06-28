@@ -13,10 +13,16 @@ export default function rectangle(corner: PointParams, otherCorner: PointParams)
             if (params.x > maxX) params.x = maxX;
             if (params.y < minY) params.y = minY;
             if (params.y > maxY) params.y = maxY;
-            return params;
+            return {
+                x: (params.x - minX) / (maxX - minX),
+                y: (params.y - minY) / (maxY - minY)
+            };
         },
         fromParametricSpace(params: PointParams): PointParams {
-            return params;
+            return {
+                x: minX + params.x * (maxX - minX),
+                y: minY + params.y * (maxY - minY)
+            };
         }
     };
 }

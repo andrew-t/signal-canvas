@@ -18,6 +18,9 @@ export type { LabelParams, LabelOptions } from "./Label";
 export { default as Angle, AngleUnit } from "./Angle";
 export type { AngleParams, AngleOptions } from "./Angle";
 
+export { default as Group, GroupBase } from "./Group";
+export type { GroupParams } from "./Group";
+
 export { default as InteractiveElement }  from "./draggable/index";
 export { default as DraggablePoint }  from "./draggable/DraggablePoint";
 export type { DraggablePointParams, DraggablePointOptions }  from "./draggable/DraggablePoint";

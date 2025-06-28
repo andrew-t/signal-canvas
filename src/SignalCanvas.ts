@@ -21,6 +21,7 @@ export default class SignalCanvas extends HTMLElement {
     private drawRequested = false;
 
     public readonly dimensions: Signal<SignalCanvasDimensions>;
+    public readonly unscaledDimensions: Signal<SignalCanvasDimensions>;
     public readonly background: Signal<string>;
     public readonly disabled: Signal<boolean>;
     public readonly pixelDensity: Signal<number>;
@@ -42,11 +43,18 @@ export default class SignalCanvas extends HTMLElement {
 
         this.pixelDensity = new Signal(() => this.attrOr("pixel-density", devicePixelRatio));
 
+        this.unscaledDimensions = new Signal(() => {
+            return {
+                width: this.attrOr("width", this.clientWidth),
+                height: this.attrOr("height", this.clientHeight)
+            };
+        });
         this.dimensions = new Signal(() => {
             const pixelDensity = this.pixelDensity.getValue();
+            const unscaledDimensions = this.unscaledDimensions.getValue();
             return {
-                width: this.attrOr("width", this.clientWidth * pixelDensity),
-                height: this.attrOr("height", this.clientWidth * pixelDensity)
+                width: unscaledDimensions.width * pixelDensity,
+                height: unscaledDimensions.height * pixelDensity
             };
         });
 
@@ -83,7 +91,7 @@ export default class SignalCanvas extends HTMLElement {
             this.focusElement = elements[0];
             this.debouncedDraw();
         });
-        
+
         this.addEventListener("keydown", (e: KeyboardEvent) => {
             const elements = this.elements.getValue().filter(el => el instanceof InteractiveElement);
             switch (e.key) {
@@ -140,6 +148,7 @@ export default class SignalCanvas extends HTMLElement {
                 default: console.log(e.key); return;
             }
             this.debouncedDraw();
+            e.preventDefault();
         });
 
         this.addEventListener("focus", () => {
@@ -153,9 +162,9 @@ export default class SignalCanvas extends HTMLElement {
     }
 
     updateSize = () => {
-        this.dimensions.markDirty();
         this.pixelDensity.markDirty();
-    }
+        this.unscaledDimensions.markDirty();
+    };
     connectedCallback() { window.addEventListener("resize", this.updateSize); }
     disconnectedCallback() { window.removeEventListener("resize", this.updateSize); }
     isOnScreen(root?: HTMLElement | null) { return isOnScreen(this, root); }
