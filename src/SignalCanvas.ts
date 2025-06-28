@@ -20,7 +20,7 @@ export default class SignalCanvas extends HTMLElement {
     private elements = new Signal<Element[]>([]);
     private drawRequested = false;
 
-    public readonly dimensions: Signal<SignalCanvasDimensions>;
+    public readonly scaledDimensions: Signal<SignalCanvasDimensions>;
     public readonly unscaledDimensions: Signal<SignalCanvasDimensions>;
     public readonly background: Signal<string>;
     public readonly disabled: Signal<boolean>;
@@ -49,7 +49,7 @@ export default class SignalCanvas extends HTMLElement {
                 height: this.attrOr("height", this.clientHeight)
             };
         });
-        this.dimensions = new Signal(() => {
+        this.scaledDimensions = new Signal(() => {
             const pixelDensity = this.pixelDensity.getValue();
             const unscaledDimensions = this.unscaledDimensions.getValue();
             return {
@@ -69,8 +69,8 @@ export default class SignalCanvas extends HTMLElement {
         this.canvas.addEventListener("mouseup", this.releaseDrag);
         this.canvas.addEventListener("mouseleave", this.cancelHover);
 
-        this.dimensions.subscribe(() => {
-            const { width, height } = this.dimensions.getValue();
+        this.scaledDimensions.subscribe(() => {
+            const { width, height } = this.scaledDimensions.getValue();
             this.canvas.width = width;
             this.canvas.height = height;
             this.ctx = this.canvas.getContext('2d')!;
@@ -194,7 +194,7 @@ export default class SignalCanvas extends HTMLElement {
     draw(): void {
         this.drawRequested = false;
         this.ctx.fillStyle = this.background.getValue();
-        const dimensions = this.dimensions.getValue();
+        const dimensions = this.scaledDimensions.getValue();
         this.ctx.fillRect(0, 0, dimensions.width, dimensions.height);
         const elements = [ ...this.elements.getValue() ]
             .filter(element => !element.getOptions().disabled)
