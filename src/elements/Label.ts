@@ -1,57 +1,46 @@
-import { NFSignal as Signal, SignalMappable } from "../Signal";
-import Element, { ElementMappable, setSvgAttr, setSvgStyles } from "./Element";
-import type { PointParams } from "./Point";
+import Element, { setSvgAttr, setSvgStyles } from "./Element";
 import type SignalCanvasRaster from "../SignalCanvasRaster";
 import type { GlobalOptions } from "../SignalCanvas";
-
-export interface LabelParams {
-    // There's no real reason to make this null, but it makes it more convenient to program against
-    location: PointParams | null;
-    text: string;
-}
+import { Vector } from "../utils/Vector";
+import { OptionalExceptSourceMap } from "../SignalGroup";
 
 export interface LabelOptions extends GlobalOptions {
-    font?: string;
-    colour?: string;
-    align?: TextAlign;
+    // There's no real reason to make this null, but it makes it more convenient to program against
+    location: Vector | null;
+    text: string;
+    font: string;
+    colour: string;
+    align: TextAlign;
 }
 
-export default class Label extends Element<LabelParams, LabelOptions> {
+export default class Label extends Element<LabelOptions> {
     /** Overwrite this if you'd like */
     static defaultFont = "16px sans-serif";
 
-    constructor(params: ElementMappable<LabelParams>);
-    constructor(text: SignalMappable<string>, location: ElementMappable<PointParams | null>);
-    constructor(
-        params: ElementMappable<LabelParams> | SignalMappable<string>,
-        location?: ElementMappable<PointParams | null>) {
-        if (!location) super(
-            params as ElementMappable<LabelParams>,
-            {}
-        );
-        else super(
-            () => ({
-                location: Element.value(location as ElementMappable<PointParams | null>),
-                text: Signal.value(params as SignalMappable<string>)
-            }),
-            {}
-        );
+    constructor(params: OptionalExceptSourceMap<LabelOptions, "location" | "text">) {
+        super({
+            colour: "black",
+            font: Label.defaultFont,
+            align: TextAlign.LeftAlign,
+            ...params
+        });
     }
 
     draw({ ctx }: SignalCanvasRaster): void {
-        const { location, text } = this.getParams();
-        const options = this.getOptions();
+        const location = this.params.location.getValue();
+        const text = this.params.text.getValue();
         if (!location || !text) return;
-        ctx.font = options.font ?? Label.defaultFont;
-        ctx.fillStyle = options.colour ?? "black";
-        ctx.textAlign = options.align ?? "start";
+        ctx.font = this.params.font.getValue();
+        ctx.fillStyle = this.params.colour.getValue();
+        ctx.textAlign = this.params.align.getValue();
         ctx.fillText(text, location.x, location.y);
     }
 
     tagName = "text";
     updateSvg(): void {
-        const { location, text } = this.getParams();
-        const { disabled, colour, align, font } = this.getOptions();
+        const location = this.params.location.getValue();
+        const text = this.params.text.getValue();
+        const disabled = this.params.disabled.getValue();
         if (disabled || !location || !text) {
             this.svgNode.replaceChildren();
             return;
@@ -60,9 +49,9 @@ export default class Label extends Element<LabelParams, LabelOptions> {
         setSvgAttr(this.svgNode, "x", location.x.toString());
         setSvgAttr(this.svgNode, "y", location.y.toString());
         setSvgStyles(this.svgNode, {
-            "text-anchor": TextAlignSvg[align ?? "left"],
-            "fill": colour ?? "black",
-            "font": font ?? Label.defaultFont
+            "text-anchor": TextAlignSvg[this.params.align.getValue()],
+            "fill": this.params.colour.getValue(),
+            "font": this.params.font.getValue()
         });
     }
 }

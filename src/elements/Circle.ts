@@ -1,77 +1,75 @@
-import Line, { LineDrawingOptions } from "./Line";
-import { cosSin, type PointParams } from "./Point";
-import Element, { ElementMappable, setSvgAttr, setSvgStyles } from "./Element";
-import { NFSignal as Signal, SignalMappable } from "../Signal";
+import Element, { setSvgAttr, setSvgStyles } from "./Element";
 import type SignalCanvasRaster from "../SignalCanvasRaster";
+import { GlobalOptions } from "../SignalCanvas";
+import { OptionalExceptSourceMap } from "../SignalGroup";
+import { cosSin, Vector } from "../utils/Vector";
 
-export interface CircleParams {
-    centre: PointParams | null;
+export const τ = Math.PI * 2;
+
+export interface CircleOptions extends GlobalOptions {
+    centre: Vector | null;
     radius: number | null;
     // Set these to just do a section of arc:
-    startAngle?: number | null;
-    endAngle?: number | null;
-    counterClockwise?: boolean;
+    startAngle: number;
+    endAngle: number;
+    counterClockwise: boolean;
+    colour: string;
+    width: number;
+    dashes: number[] | null;
 }
 
-export default class Circle extends Element<CircleParams, LineDrawingOptions> {
-    constructor(params: ElementMappable<CircleParams>);
-    constructor(centre: ElementMappable<PointParams | null>, radius: SignalMappable<number | null>);
-    constructor(
-        params: ElementMappable<PointParams | null> | ElementMappable<CircleParams>,
-        radius?: SignalMappable<number | null>,
-    ) {
-        if (radius !== undefined) super(
-            () => ({
-                centre: Element.value(params as ElementMappable<PointParams | null>),
-                radius: Signal.value(radius as SignalMappable<number | null>)
-            }),
-            {});
-        else super(
-            params as ElementMappable<CircleParams>,
-            {}
-        );
+// TODO: support making a circle from three points
+
+export default class Circle extends Element<CircleOptions> {
+    constructor(params: OptionalExceptSourceMap<CircleOptions, "centre" | "radius">) {
+        super({
+            startAngle: 0,
+            endAngle: τ,
+            counterClockwise: false,
+            colour: "black",
+            width: 1,
+            dashes: null,
+            ...params
+        });
     }
 
-    getCentre() {
-        return new Signal(this.getParams().centre);
-    }
-
-    // TODO: support making a circle from three points
 
     draw({ ctx }: SignalCanvasRaster): void {
-        const params = this.getParams();
-        const options = this.getOptions();
-        if (!params.centre || !params.radius) return;
-        Line.applyLineOptions(ctx, options);
+        const centre = this.params.centre.getValue();
+        const radius = this.params.radius.getValue();
+        if (!centre || !radius) return;
+        ctx.strokeStyle = this.params.colour.getValue();
+        ctx.lineWidth = this.params.width.getValue();
+        ctx.setLineDash(this.params.dashes.getValue() ?? []);
         ctx.beginPath();
         ctx.arc(
-            params.centre.x,
-            params.centre.y,
-            params.radius,
-            params.startAngle ?? 0,
-            params.endAngle ?? Math.PI * 2,
-            !!params.counterClockwise
+            centre.x,
+            centre.y,
+            radius,
+            this.params.startAngle.getValue(),
+            this.params.endAngle.getValue(),
+            this.params.counterClockwise.getValue()
         );
         ctx.stroke();
     }
 
     tagName = "circle";
     updateSvg() {
-        const {
-            centre, radius,
-            startAngle, endAngle,
-            counterClockwise = false
-        } = this.getParams();
-        const { disabled, ...options } = this.getOptions();
-        if (disabled || !radius || !centre) {
+        const centre = this.params.centre.getValue();
+        const radius = this.params.radius.getValue();
+        if (this.params.disabled.getValue() || !radius || !centre) {
             setSvgAttr(this.svgNode, "d", "M 0 0");
             return;
         }
-        if ((typeof startAngle == "number") && (typeof endAngle == "number")) {
+
+        const startAngle = this.params.startAngle.getValue();
+        const endAngle = this.params.endAngle.getValue();
+        if (startAngle != 0 || endAngle != τ) {
             this.setSvgTag("path")
-            let start = cosSin(startAngle!, radius!, centre);
-            let end = cosSin(endAngle!, radius!, centre);
-            if (counterClockwise) [start, end] = [end, start];
+            let start = cosSin(startAngle!, radius, centre);
+            let end = cosSin(endAngle!, radius, centre);
+            if (this.params.counterClockwise.getValue())
+                [start, end] = [end, start];
             const theta = (endAngle - startAngle + Math.PI * 4) % (Math.PI * 2);
             const useLongArc = theta >= Math.PI;
             setSvgAttr(this.svgNode, "d",
@@ -86,7 +84,9 @@ export default class Circle extends Element<CircleParams, LineDrawingOptions> {
             setSvgAttr(this.svgNode, "r", radius.toString());
         }
         setSvgStyles(this.svgNode, {
-            ...Line.svgStyles(options),
+            "stroke": this.params.colour.getValue(),
+            "stroke-width": `${this.params.width.getValue()}px`,
+            "stroke-dasharray": this.params.dashes.getValue()?.map(d => `${d}px`).join(" ") ?? "",
             fill: "none"
         });
     }

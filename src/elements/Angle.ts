@@ -1,125 +1,122 @@
 import Signal from "../Signal";
 import { GlobalOptions } from "../SignalCanvas";
-import Circle from "./Circle";
-import Element, { ElementMappable } from "./Element";
-import { GroupBase } from "./Group";
-import Label, { LabelOptions, TextAlign } from "./Label";
-import type { LineDrawingOptions } from "./Line";
-import type { PointParams } from "./Point";
-
-export interface AngleParams {
-    from: PointParams | null;
-    hinge: PointParams | null;
-    to: PointParams | null;
-    value?: string | null; // will be worked out if not set
-}
+import { OptionalExceptSourceMap } from "../SignalGroup";
+import { atan, Vector } from "../utils/Vector";
+import Circle, { τ } from "./Circle";
+import Group from "./Group";
+import Label, { TextAlign } from "./Label";
 
 export interface AngleOptions extends GlobalOptions {
-    unit?: AngleUnit;
-    name?: string;
-    showValue?: boolean;
-    decimalPlaces?: number;
-    radius?: number;
-    line?: LineDrawingOptions;
-    label?: LabelOptions;
-    labelDistance?: number;
-    labelOffset?: PointParams;
+    from: Vector | null;
+    hinge: Vector | null;
+    to: Vector | null;
+    value: string | null; // will be worked out if not set
+    unit: AngleUnit;
+    name: string | null;
+    showValue: boolean;
+    decimalPlaces: number;
+    radius: number;
+    lineColour: string;
+    lineWidth: number;
+    lineDashes: number[] | null;
+    labelFont: string;
+    labelColour: string;
+    labelDistance: number;
+    labelOffset: Vector;
 }
 
-export default class Angle extends GroupBase<AngleParams, AngleOptions> {
+export default class Angle extends Group<AngleOptions> {
     private circle: Circle;
     private label: Label;
 
-    constructor(params: ElementMappable<AngleParams>);
-    constructor(
-        from: ElementMappable<PointParams | null>,
-        hinge: ElementMappable<PointParams | null>,
-        to: ElementMappable<PointParams | null>,
-        value?: ElementMappable<string | null>
-    );
-    constructor(
-        a: ElementMappable<AngleParams> | ElementMappable<PointParams | null>,
-        b?: ElementMappable<PointParams | null>,
-        c?: ElementMappable<PointParams | null>,
-        d?: ElementMappable<string | null>
-    ) {
-        if (!b)
-            super(a as ElementMappable<AngleParams>, {}, []);
-        else
-            super(() => ({
-                from: Element.value(a as ElementMappable<PointParams | null>),
-                hinge: Element.value(b!),
-                to: Element.value(c!),
-                value: Element.value(d!),
-            }), {}, []);
+    constructor(params: OptionalExceptSourceMap<AngleOptions, "from" | "hinge" | "to">) {
+        super({
+            value: null,
+            unit: AngleUnit.Degrees,
+            name: null,
+            showValue: false,
+            decimalPlaces: 0,
+            radius: 32,
+            lineColour: "black",
+            lineWidth: 1,
+            lineDashes: null,
+            labelFont: Label.defaultFont,
+            labelColour: "black",
+            labelDistance: 48,
+            labelOffset: { x: 0, y: 8 },
+            ...params,
+        });
 
-        const paramsWithAngles = new Signal(() => {
-            const { from, hinge, to } = this.getParams();
-            if (!from || !hinge || !to) return null;
+        const angles = new Signal(() => {
+            const from = this.params.from.getValue();
+            const to = this.params.to.getValue();
+            const hinge = this.params.hinge.getValue();
+            if (!from || !hinge || !to)
+                return { fromAngle: 0, toAngle: τ, theta: τ };
             const htf = { x: from.x - hinge.x, y: from.y - hinge.y };
             const htt = { x: to.x - hinge.x, y: to.y - hinge.y };
-            const fromAngle = Math.atan2(htf.y, htf.x);
-            const toAngle = Math.atan2(htt.y, htt.x);
-            return { from, hinge, to, htf, htt, fromAngle, toAngle };
+            const fromAngle = atan(htf);
+            const toAngle = atan(htt);
+            let theta = (toAngle - fromAngle);
+            if (theta < 0) theta += Math.PI * 2;
+            return { fromAngle, toAngle, theta };
         });
         
-        this.circle = new Circle(() => {
-            const angles = paramsWithAngles.getValue();
-            if (!angles) return { centre: null, radius: null };
-            const { radius } = this.getOptions();
-            return {
-                centre: angles.hinge,
-                radius: radius ?? 32,
-                startAngle: angles.fromAngle,
-                endAngle: angles.toAngle
-            };
-
-        }).setOptions(() => this.getOptions().line ?? {});
+        this.circle = new Circle({
+            centre: this.params.hinge,
+            radius: () => this.params.radius.getValue(),
+            startAngle: () => angles.getValue().fromAngle,
+            endAngle: () => angles.getValue().toAngle,
+            colour: this.params.lineColour,
+            width: this.params.lineWidth,
+            dashes: this.params.lineDashes,
+            disabled: this.params.disabled
+        });
         
-        this.label = new Label(() => {
-            const { value: givenValue, hinge } = this.getParams();
-            const { name, unit, decimalPlaces, labelDistance, labelOffset } = this.getOptions();
-            const angles = paramsWithAngles.getValue();
-            if (!angles) return { text: "", location: hinge };
-            let theta = (angles.toAngle - angles.fromAngle);
-            if (theta < 0) theta += Math.PI * 2;
-            const labelAngle = angles.fromAngle + theta * 0.5;
-            let value = "";
-            if (givenValue) value = givenValue;
-            else if (!value && unit != AngleUnit.Hidden) {
-                value = (theta / getUnit(unit)).toFixed(decimalPlaces) + getSuffix(unit);
-            }
-            const labelRadius = labelDistance ?? 48;
-            return {
-                text: name ? (value ? `${name} = ${value}` : name) : value,
-                location: {
+        this.label = new Label({
+            location: () => {
+                const hinge = this.params.hinge.getValue();
+                const { fromAngle, theta } = angles.getValue();
+                const labelOffset = this.params.labelOffset.getValue();
+                const labelRadius = this.params.labelDistance.getValue();
+                const labelAngle = fromAngle + theta * 0.5;
+                return {
                     x: hinge!.x + Math.cos(labelAngle) * labelRadius + (labelOffset?.x ?? 0),
                     y: hinge!.y + Math.sin(labelAngle) * labelRadius + (labelOffset?.y ?? 8),
+                };
+            },
+            text: () => {
+                const name = this.params.name.getValue();
+                const showValue = this.params.showValue.getValue();
+                if (!showValue) return name ?? "";
+                let value = this.params.value.getValue();
+                if (value == null) {
+                    const { theta } = angles.getValue();
+                    const unit = this.params.unit.getValue();
+                    const decimalPlaces = this.params.decimalPlaces.getValue();
+                    value = (theta / getUnit(unit)).toFixed(decimalPlaces) + getSuffix(unit);
                 }
-            };
-        }).setOptions(() => {
-            const params = this.getParams();
-            const options = this.getOptions();
-            return {
-                disabled: !options.showValue && !params.value && !options.name,
-                align: TextAlign.CentreAlign,
-                ...options.label
-            };
+                if (!name) return value;
+                return `${name} = ${value}`;
+            },
+            align: TextAlign.CentreAlign,
+            font: this.params.labelFont,
+            colour: this.params.labelColour,
+            disabled: this.params.disabled
         });
 
-        this.elements.setValue([this.circle, this.label]);
+        this.params.elements.setValue([this.circle, this.label]);
     }
 }
 
 export enum AngleUnit {
-    Hidden = "hidden",
     Radians = "radians",
     RadiansInTermsOfπ = "pi-radians",
     Revolutions = "revolutions",
     Degrees = "degrees"
 }
 
-function getUnit(unit?: Exclude<AngleUnit, AngleUnit.Hidden>): number {
+function getUnit(unit?: AngleUnit): number {
     switch (unit) {
         case undefined: case AngleUnit.Radians: return 1;
         case AngleUnit.RadiansInTermsOfπ: return Math.PI;
@@ -128,7 +125,7 @@ function getUnit(unit?: Exclude<AngleUnit, AngleUnit.Hidden>): number {
     }
 }
 
-function getSuffix(unit?: Exclude<AngleUnit, AngleUnit.Hidden>): string {
+function getSuffix(unit?: AngleUnit): string {
     switch (unit) {
         case undefined: case AngleUnit.Radians: return "";
         case AngleUnit.RadiansInTermsOfπ: return "π";

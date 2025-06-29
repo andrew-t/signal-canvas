@@ -1,0 +1,10 @@
+{
+    "compilerOptions": {
+        "lib": ["ES2023", "DOM"],
+        "target": "es2020",
+        "strictNullChecks": true,
+        "exactOptionalPropertyTypes": true,
+        "moduleResolution": "nodenext",
+        "module": "nodenext"
+    }
+}

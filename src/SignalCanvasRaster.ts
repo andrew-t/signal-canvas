@@ -88,9 +88,9 @@ export default class SignalCanvasRaster extends SignalCanvas {
                         this.currentDrag.element.dragTo(this.currentDrag.current, this.currentDrag.start);
                     } else {
                         const i = elements.indexOf(this.focusElement!);
-                        this.focusElement?.hover.setValue(false);
+                        this.focusElement?.params.hover.setValue(false);
                         this.focusElement = elements[(i + elements.length - 1) % elements.length];
-                        this.focusElement?.hover.setValue(true);
+                        this.focusElement?.params.hover.setValue(true);
                     }
                     break;
                 case "ArrowRight":
@@ -102,9 +102,9 @@ export default class SignalCanvasRaster extends SignalCanvas {
                         this.currentDrag.element.dragTo(this.currentDrag.current, this.currentDrag.start);
                     } else {
                         const i = elements.indexOf(this.focusElement!);
-                        this.focusElement?.hover.setValue(false);
+                        this.focusElement?.params.hover.setValue(false);
                         this.focusElement = elements[(i + 1) % elements.length];
-                        this.focusElement?.hover.setValue(true);
+                        this.focusElement?.params.hover.setValue(true);
                     }
                     break;
                 case " ":
@@ -113,17 +113,14 @@ export default class SignalCanvasRaster extends SignalCanvas {
                     break;
                 default: console.log(e.key); return;
             }
-            this.debouncedDraw();
             e.preventDefault();
         });
         
         this.addEventListener("focus", () => {
-            this.debouncedDraw();
-            this.focusElement?.hover.setValue(true);
+            this.focusElement?.params.hover.setValue(true);
         });
         this.addEventListener("blur", () => {
-            this.debouncedDraw();
-            this.focusElement?.hover.setValue(false);
+            this.focusElement?.params.hover.setValue(false);
         });
     }
 
@@ -137,8 +134,8 @@ export default class SignalCanvasRaster extends SignalCanvas {
         const dimensions = this.scaledDimensions.getValue();
         this.ctx.fillRect(0, 0, dimensions.width, dimensions.height);
         const elements = [ ...this.elements.getValue() ]
-            .filter(element => !element.getOptions().disabled)
-            .sort((a, b) => (a.getOptions().zIndex ?? 0) - (b.getOptions().zIndex ?? 0));
+            .filter(element => !element.params.disabled.getValue())
+            .sort((a, b) => a.params.zIndex.getValue() - b.params.zIndex.getValue());
         for (const element of elements)
             element.draw(this);
     }
@@ -157,7 +154,7 @@ export default class SignalCanvasRaster extends SignalCanvas {
         let bestElement: InteractiveElement | null = null;
         for (const el of this.elements.getValue()) {
             if (!(el instanceof InteractiveElement)) continue;
-            if (el.getOptions().disabled) continue;
+            if (el.params.disabled.getValue()) continue;
             const score = el.hoverScore(coords);
             if (score > bestScore) {
                 bestScore = score;
@@ -169,18 +166,16 @@ export default class SignalCanvasRaster extends SignalCanvas {
             return;
         }
         if (this.hoveredElement == bestElement) return;
-        bestElement.hover.setValue(true);
+        bestElement.params.hover.setValue(true);
         this.hoveredElement = bestElement;
-        this.debouncedDraw();
         this.style.cursor = bestElement.canBeDragged ? "grab" : "pointer";
     };
 
     cancelHover = () => {
         this.releaseDrag();
         if (!this.hoveredElement) return;
-        this.hoveredElement.hover.setValue(false);
+        this.hoveredElement.params.hover.setValue(false);
         this.hoveredElement = null;
-        this.debouncedDraw();
         this.style.cursor = "auto";
     };
 }

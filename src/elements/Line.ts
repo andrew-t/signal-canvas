@@ -1,71 +1,53 @@
-import Element, { ElementMappable, setSvgAttr, setSvgStyles } from "./Element";
-import type { PointParams } from "./Point";
+import Element, { setSvgAttr, setSvgStyles } from "./Element";
 import type SignalCanvasRaster from "../SignalCanvasRaster";
 import type SignalCanvasVector from "../SignalCanvasVector";
 import type { GlobalOptions, SignalCanvasDimensions } from "../SignalCanvas";
+import { directionTo, type Vector } from "../utils/Vector";
+import { OptionalExceptSourceMap, SignalMap } from "../SignalGroup";
 
-export interface LineParams {
-    a: PointParams | null,
-    b: PointParams | null
-}
-
-export interface LineDrawingOptions extends GlobalOptions {
-    colour?: string;
-    width?: number;
-    dashes?: number[];
-}
-
-export interface LineOptions extends LineDrawingOptions {
-    extendPastA?: boolean;
-    extendPastB?: boolean;
+export interface LineOptions extends GlobalOptions {
+    a: Vector | null,
+    b: Vector | null
+    colour: string;
+    width: number;
+    dashes: number[] | null;
+    extendPastA: boolean;
+    extendPastB: boolean;
     // TODO: support arrowheads
 }
 
-export default class Line extends Element<LineParams | null, LineOptions> {
-    constructor(a: ElementMappable<PointParams | null>, b: ElementMappable<PointParams | null>);
-    constructor(params: ElementMappable<LineParams | null>);
-    constructor(
-        a: ElementMappable<LineParams | null> | ElementMappable<PointParams | null>,
-        b?: ElementMappable<PointParams | null> | ElementMappable<LineOptions>
-    ) {
-        if (b)
-            super(
-                () => ({
-                    a: Element.value(a as ElementMappable<PointParams | null>),
-                    b: Element.value(b as ElementMappable<PointParams | null>),
-                }),
-                {}
-            );
-        else super(
-            a as ElementMappable<LineParams | null>,
-            {}
-        );
-    }
-
-    static applyLineOptions(ctx: CanvasRenderingContext2D, options: LineDrawingOptions = {}) {
-        ctx.strokeStyle = options.colour ?? "black";
-        ctx.lineWidth = options.width ?? 1;
-        ctx.setLineDash(options.dashes ?? []);
+export default class Line extends Element<LineOptions> {
+    constructor(params: OptionalExceptSourceMap<LineOptions, "a" | "b">) {
+        super({
+            colour: "black",
+            width: 1,
+            dashes: null,
+            extendPastA: false,
+            extendPastB: false,
+            ...params
+        });
     }
     
     private trueEnds(dim: SignalCanvasDimensions) {
-        const params = this.getParams();
-        const options = this.getOptions();
-        if (!params?.a || !params?.b) return null;
-        if (params.a.x == params.b.x && params.a.y == params.b.y) return null;
-        let start = params.a;
-        let end = params.b;
-        if (options.extendPastA || options.extendPastB) {
-            const diff = normalisedDiff(start, end);
+        const a = this.params.a.getValue();
+        const b = this.params.b.getValue();
+        if (!a || !b) return null;
+        if (a.x == b.x && a.y == b.y) return null;
+        const extendPastA = this.params.extendPastA.getValue();
+        const extendPastB = this.params.extendPastB.getValue();
+        let start = a;
+        let end = b;
+        if (extendPastA || extendPastB) {
+            const diff = directionTo(start, end)();
             const sizeFactor = dim.width + dim.height;
-            if (options.extendPastA) {
+            if (extendPastA) {
                 const t = tParam(dim, diff, start);
                 if (t > -sizeFactor) {
                     const extra = t + sizeFactor;
                     start = { x: start.x - diff.x * extra, y: start.y - diff.y * extra };
                 }
             }
-            if (options.extendPastB) {
+            if (extendPastB) {
                 const t = tParam(dim, diff, end);
                 if (t < sizeFactor) {
                     const extra = sizeFactor - t;
@@ -80,8 +62,9 @@ export default class Line extends Element<LineParams | null, LineOptions> {
         const dim = dimensions.getValue();
         const ends = this.trueEnds(dim);
         if (!ends) return;
-        const options = this.getOptions();
-        Line.applyLineOptions(ctx, options);
+        ctx.strokeStyle = this.params.colour.getValue();
+        ctx.lineWidth = this.params.width.getValue();
+        ctx.setLineDash(this.params.dashes.getValue() ?? []);
         ctx.beginPath();
         ctx.moveTo(ends.start.x, ends.start.y);
         ctx.lineTo(ends.end.x, ends.end.y);
@@ -97,27 +80,19 @@ export default class Line extends Element<LineParams | null, LineOptions> {
             `M ${ends.start.x} ${ends.start.y}
              L ${ends.end.x} ${ends.end.y}`
         );
-        setSvgStyles(this.svgNode, Line.svgStyles(this.getOptions()));
-    }
-    static svgStyles({ width, colour, dashes }: LineDrawingOptions) {
-        return {
-            "stroke": colour ?? "black",
-            "stroke-width": `${width ?? 1}px`,
-            "stroke-dasharray": dashes?.map(d => `${d}px`).join(" ") ?? ""
-        };
+        setSvgStyles(this.svgNode, {
+            "stroke": this.params.colour.getValue(),
+            "stroke-width": `${this.params.width.getValue()}px`,
+            "stroke-dasharray": this.params.dashes.getValue()?.map(d => `${d}px`).join(" ") ?? ""
+        });
     }
 }
 
 function tParam(
     { width, height }: SignalCanvasDimensions,
-    direction: PointParams,
-    point: PointParams
+    direction: Vector,
+    point: Vector
 ) {
     const centreToPoint = { x: point.x - width / 2, y: point.y - height / 2 };
     return centreToPoint.x * direction.x + centreToPoint.y * direction.y;
-}
-
-function normalisedDiff(a: PointParams, b: PointParams): PointParams {
-    const len = Math.sqrt(a.x * a.x + b.x * b.x);
-    return { x: (b.x - a.x) / len, y: (b.y - a.y) / len };
 }

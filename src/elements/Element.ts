@@ -2,36 +2,22 @@ import { Getter, NFSignal as Signal, SignalSubscriber } from "../Signal.js";
 import { GlobalOptions } from "../SignalCanvas.js";
 import type SignalCanvasRaster from "../SignalCanvasRaster.js";
 import type SignalCanvasVector from "../SignalCanvasVector.js";
+import SignalGroup, { OptionalSourceMap, SignalMap, SourceMap } from "../SignalGroup.js";
 
 export type Source<T> = T | Getter<T>;
-export type ElementMappable<T> = Signal<T> | Element<T> | Source<T>;
 export const SvgNS = "http://www.w3.org/2000/svg";
 
-export default abstract class Element<T = any, O extends GlobalOptions = GlobalOptions> {
-    private params: Signal<T>;
-    private options: Signal<O>;
+export default abstract class Element<T extends GlobalOptions = any> {
+    public readonly signals: SignalGroup<T>;
+    public readonly params: SignalMap<T>;
 
-    constructor(params: ElementMappable<T>, options: ElementMappable<O>) {
-        this.params = Element.paramsSignalFrom(params);
-        this.options = Element.paramsSignalFrom(options);
-    }
-
-    getParams(): T {
-        return this.params.getValue();
-    }
-
-    getOptions(): O {
-        return this.options.getValue();
-    }
-
-    setParams(value: Source<T>): typeof this {
-        this.params.setValue(value);
-        return this;
-    }
-
-    setOptions(value: Source<O>): typeof this {
-        this.options.setValue(value);
-        return this;
+    constructor(params: OptionalSourceMap<T, keyof GlobalOptions>) {
+        this.signals = new SignalGroup<T>({
+            zIndex: 0,
+            disabled: false,
+            ...params
+        } as SourceMap<T>);
+        this.params = this.signals.signals;
     }
 
     abstract draw(canvas: SignalCanvasRaster): void;
@@ -41,7 +27,7 @@ export default abstract class Element<T = any, O extends GlobalOptions = GlobalO
     private createTag(tag: string, parent: SVGElement) {
         this.svgNode = document.createElementNS(SvgNS, tag) as SVGElement;
         if (parent) parent.appendChild(this.svgNode);
-        const { zIndex } = this.getOptions();
+        const zIndex = this.params.zIndex.getValue();
         setSvgStyles(this.svgNode, {
             "z-index": zIndex?.toString() ?? "0"
         });
@@ -58,42 +44,6 @@ export default abstract class Element<T = any, O extends GlobalOptions = GlobalO
         }
     }
     abstract updateSvg(svg: SignalCanvasVector): void;
-
-    static value<T>(object: ElementMappable<T>) {
-        if (object instanceof Element) return object.getParams();
-        return Signal.value(object);
-    }
-
-    static paramsSignalFrom<T>(object: ElementMappable<T>): Signal<T> {
-        if (object instanceof Element) return object.params;
-        return Signal.from(object);
-    }
-
-    subscribeParams(callback: SignalSubscriber<T>): void {
-        this.params.subscribe(callback);
-    }
-
-    unsubscribeParams(callback: SignalSubscriber<T>): void {
-        this.params.unsubscribe(callback);
-    }
-
-    subscribeOptions(callback: SignalSubscriber<O>): void {
-        this.options.subscribe(callback);
-    }
-
-    unsubscribeOptions(callback: SignalSubscriber<O>): void {
-        this.options.unsubscribe(callback);
-    }
-
-    subscribe(callback: () => void): void {
-        this.params.subscribe(callback);
-        this.options.subscribe(callback);
-    }
-
-    unsubscribe(callback: () => void): void {
-        this.params.unsubscribe(callback);
-        this.options.unsubscribe(callback);
-    }
 }
 
 export function setSvgAttr(el: SVGElement, key: string, value: string) {

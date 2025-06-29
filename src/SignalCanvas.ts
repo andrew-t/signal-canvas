@@ -1,7 +1,7 @@
 import { NFSignal as Signal } from "./Signal";
 import type Element from "./elements/Element";
-import type { PointParams } from "./elements/Point";
 import InteractiveElement from "./elements/draggable/index";
+import { Vector } from "./utils/Vector";
 import { isOnScreen } from "./utils/scrolling";
 
 export interface SignalCanvasDimensions {
@@ -10,14 +10,16 @@ export interface SignalCanvasDimensions {
 }
 
 export interface GlobalOptions {
-    zIndex?: number;
-    disabled?: boolean;
+    zIndex: number;
+    disabled: boolean;
     // TODO: maybe add "opacity" here?
 }
 
 export default abstract class SignalCanvas extends HTMLElement {
     /** All the things on the canvas */
     protected elements = new Signal<Element[]>([]);
+
+    private drawSignal = new Signal(() => this.drawFrame());
 
     /** Whether we need to refresh the view on the next frame */
     private drawRequested = false;
@@ -34,10 +36,10 @@ export default abstract class SignalCanvas extends HTMLElement {
     public hoveredElement: InteractiveElement | null = null;
 
     public currentDrag: {
-        start: PointParams;
-        current: PointParams;
+        start: Vector;
+        current: Vector;
         element: InteractiveElement;
-        touchId?: number;
+        touchId: number | undefined;
     } | null = null;
 
     constructor() {
@@ -54,6 +56,7 @@ export default abstract class SignalCanvas extends HTMLElement {
         this.disabled = new Signal(() => !isOnScreen.getValue());
 
         this.elements.subscribe(this.debouncedDraw);
+        this.drawSignal.subscribe(this.debouncedDraw);
         setTimeout(() => this.draw());
     }
 
@@ -63,8 +66,8 @@ export default abstract class SignalCanvas extends HTMLElement {
     disconnectedCallback() { window.removeEventListener("resize", this._updateSize); }
 
     isOnScreen(root?: HTMLElement | null) { return isOnScreen(this, root); }
-    mouseCoords(e: MouseEvent): PointParams { return { x: e.offsetX, y: e.offsetY }; }
-    touchCoords(e: Touch): PointParams {
+    mouseCoords(e: MouseEvent): Vector { return { x: e.offsetX, y: e.offsetY }; }
+    touchCoords(e: Touch): Vector {
         const a = this.getBoundingClientRect();
         return { x: e.clientX - a.left, y: e.clientY - a.top };
     }
@@ -78,7 +81,6 @@ export default abstract class SignalCanvas extends HTMLElement {
         const current = this.elements.getValue();
         if (current.includes(element)) return element;
         this.elements.setValue([...current, element]);
-        element.subscribe(this.debouncedDraw);
         return element;
     }
 
@@ -86,14 +88,13 @@ export default abstract class SignalCanvas extends HTMLElement {
     delete<T extends Element>(element: T): T {
         const current = this.elements.getValue();
         this.elements.setValue(current.filter(e => e != element));
-        element.unsubscribe(this.debouncedDraw);
         return element;
     }
 
     protected abstract drawFrame(): void;
     draw(): void {
         this.drawRequested = false;
-        this.drawFrame();
+        this.drawSignal.getValue();
     }
     debouncedDraw = (): void => {
         if (this.drawRequested) return;
@@ -110,17 +111,15 @@ export default abstract class SignalCanvas extends HTMLElement {
             current: coords,
             touchId: touch?.identifier
         };
-        el.active.setValue(true);
+        el.params.active.setValue(true);
         this.style.cursor = "grabbing";
-        this.debouncedDraw();
     };
 
     releaseDrag = () => {
         if (!this.currentDrag) return;
-        this.currentDrag.element.active.setValue(false);
+        this.currentDrag.element.params.active.setValue(false);
         this.currentDrag = null;
         this.style.cursor = "grab";
-        this.debouncedDraw();
     };
 }
 

@@ -1,53 +1,54 @@
-import Point, { PointOptions, PointParams } from "../Point.js";
-import Element, { ElementMappable, setSvgAttr, setSvgStyles } from "../Element.js";
+import Point from "../Point.js";
+import { setSvgAttr, setSvgStyles } from "../Element.js";
 import { GlobalOptions } from "../../SignalCanvas.js";
 import { DraggablePointLocus } from "./loci/types.js";
 import InteractiveElement from "./index.js";
-import Signal, { NFSignal } from "../../Signal.js";
 import type SignalCanvasRaster from "../../SignalCanvasRaster.js";
 import type SignalCanvasVector from "../../SignalCanvasVector.js";
+import { OptionalExceptSourceMap } from "../../SignalGroup.js";
+import { Vector } from "../../utils/Vector.js";
 
-export interface DraggablePointParams<T> {
+export interface DraggablePointOptions<T> extends GlobalOptions {
     params: T;
     locus: DraggablePointLocus<T>;
+    colour: string;
+    size: number;
+    activeColour: string;
+    activeSize: number;
+    hoverColour: string;
+    hoverSize: number;
 }
 
-export interface DraggablePointOptions extends GlobalOptions {
-    point?: PointOptions;
-    activePoint?: PointOptions;
-    hoverPoint?: PointOptions;
-}
-
-export default class DraggablePoint<T> extends InteractiveElement<DraggablePointParams<T>, DraggablePointOptions> {
+export default class DraggablePoint<T> extends InteractiveElement<DraggablePointOptions<T>> {
     public readonly point: Point;
-    
-    private t: Signal<T>;
-    private locus: Signal<DraggablePointLocus<T>>;
-    
-    constructor(
-        initialPosition: T,
-        locus: ElementMappable<DraggablePointLocus<T>>
-    ) {
-        const t = new NFSignal(initialPosition);
-        const locusSignal = Element.paramsSignalFrom(locus);
-        super(() => ({
-            params: t.getValue(),
-            locus: locusSignal.getValue()
-        }), {});
-        this.t = t;
-        this.locus = locusSignal;
 
-        this.point = new Point(() => {
-            const { params, locus } = this.getParams();
-            return locus.fromParametricSpace(params);
-        })
-        .setOptions(() => {
-            const { point, activePoint, hoverPoint } = this.getOptions();
-            if(this.active.getValue())
-                return activePoint ?? hoverPoint ?? { colour: "#08f", radius: 10 };
-            if (this.hover.getValue())
-                return hoverPoint ?? { colour: "red", radius: 8 };
-            return point ?? { colour: "#00f", radius: 6 };
+    constructor(params: OptionalExceptSourceMap<DraggablePointOptions<T>, "params" | "locus">) {
+        super({
+            colour: "blue",
+            size: 10,
+            activeColour: "#0cf",
+            activeSize: 10,
+            hoverColour: "red",
+            hoverSize: 12,
+            ...params
+        });
+
+        this.point = new Point({
+            location: () => this.params.locus.getValue().fromParametricSpace(this.params.params.getValue()),
+            colour: () => {
+                if (this.params.active.getValue())
+                    return this.params.activeColour.getValue();
+                if (this.params.hover.getValue())
+                    return this.params.hoverColour.getValue();
+                return this.params.colour.getValue();
+            },
+            size: () => {
+                if (this.params.active.getValue())
+                    return this.params.activeSize.getValue();
+                if (this.params.hover.getValue())
+                    return this.params.hoverSize.getValue();
+                return this.params.size.getValue();
+            }
         });
 
         this.canBeDragged = true;
@@ -61,25 +62,31 @@ export default class DraggablePoint<T> extends InteractiveElement<DraggablePoint
         // TODO: add a larger, invisible click target
         this.point.drawSvg(svg, this.svgNode);
         setSvgAttr(this.svgNode, "tabindex", "0");
-        setSvgStyles(this.svgNode, { cursor: this.active.getValue() ? "grabbing" : "grab" });
+        setSvgStyles(this.svgNode, {
+            cursor: this.params.active.getValue() ? "grabbing" : "grab"
+        });
     }
 
-    hoverScore(coords: PointParams): number {
+    hoverScore(coords: Vector): number {
         // TODO: allow custom radius?
-        const p = this.point.getParams();
+        const p = this.point.params.location.getValue();
         if (!p) return 0;
         const x = p.x - coords.x;
         const y = p.y - coords.y;
         return 1 - (Math.sqrt(x * x + y * y) / 16);
     }
 
-    dragTo(coords: PointParams): void {
-        // We don't want t to depend on the locus, it should just get its new value and then stay there
-        const locus = this.locus.getValue();
-        this.t.setValue(() => locus.toParametricSpace(coords));
+    dragTo(coords: Vector): void {
+        // We don't want params to depend on the locus, it should just get its new value and then stay there
+        const locus = this.params.locus.getValue();
+        this.params.params.setValue(() => locus.toParametricSpace(coords));
     }
 
-    dragPos(): PointParams {
-        return this.locus.getValue().fromParametricSpace(this.t.getValue());
+    getLocation(): Vector {
+        return this.point.params.location.getValue()!;
+    }
+
+    dragPos(): Vector {
+        return this.getLocation();
     }
 }

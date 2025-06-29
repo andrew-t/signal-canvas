@@ -14,7 +14,7 @@ export type SignalMappable<T> = T | Getter<T> | Signal<T>;
 export default class Signal<T = any> {
     private static getValueContextStack: GetValueContext[] = [];
     
-    public name?: string;
+    public name: string | undefined;
     private getter: Getter<T>;
     private value: T;
 

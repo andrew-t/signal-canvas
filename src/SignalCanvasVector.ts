@@ -31,16 +31,14 @@ export default class SignalCanvasVector extends SignalCanvas {
             const target = this.getTarget(e.target as Element);
             if (!target) return;
             this.hoveredElement = target;
-            target.hover.setValue(true);
-            this.debouncedDraw();
+            target.params.hover.setValue(true);
         });
 
         this.addEventListener("mouseout", e => {
             const target = this.getTarget(e.target as Element);
             if (!target) return;
             if (this.hoveredElement == target) this.hoveredElement = null;
-            target.hover.setValue(false);
-            this.debouncedDraw();
+            target.params.hover.setValue(false);
         });
 
         this.addEventListener("mouseleave", this.releaseDrag);
@@ -55,7 +53,7 @@ export default class SignalCanvasVector extends SignalCanvas {
 
         this.addEventListener("touchstart", (e) => {
             if (this.currentDrag) return;
-            for (const touch of e.changedTouches) {
+            for (const touch of Array.from(e.changedTouches)) {
                 const target = this.getTarget(touch.target as Element);
                 if (!target) continue;
                 if (target.canBeDragged) {
@@ -68,7 +66,7 @@ export default class SignalCanvasVector extends SignalCanvas {
 
         function endTouch(e: TouchEvent) {
             if (!this.currentDrag) return;
-            for (const touch of e.changedTouches)
+            for (const touch of Array.from(e.changedTouches))
                 if (touch.identifier == this.currentDrag!.touchId) {
                     this.releaseDrag();
                     e.preventDefault();
@@ -80,7 +78,7 @@ export default class SignalCanvasVector extends SignalCanvas {
 
         this.addEventListener("touchmove", e => {
             if (!this.currentDrag) return;
-            for (const touch of e.changedTouches)
+            for (const touch of Array.from(e.changedTouches))
                 if (touch.identifier == this.currentDrag!.touchId) {
                     this.currentDrag!.element.dragTo(this.touchCoords(touch), this.currentDrag!.start);
                     e.preventDefault();
@@ -122,7 +120,6 @@ export default class SignalCanvasVector extends SignalCanvas {
                     default: return;
                 }
                 e.preventDefault();
-                this.debouncedDraw();
                 return;
             }
             const target = this.getTarget(e.target as Element);
@@ -136,8 +133,8 @@ export default class SignalCanvasVector extends SignalCanvas {
 
     protected drawFrame(): void {
         const elements = [ ...this.elements.getValue() ]
-            .filter(element => !element.getOptions().disabled)
-            .sort((a, b) => (a.getOptions().zIndex ?? 0) - (b.getOptions().zIndex ?? 0));
+            .filter(element => !element.params.disabled.getValue())
+            .sort((a, b) => a.params.zIndex.getValue() - b.params.zIndex.getValue());
         for (const el of elements)
             el.drawSvg(this, this.svg);
     }
